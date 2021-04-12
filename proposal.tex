@@ -42,14 +42,15 @@
 {\def\addcontentsline#1#2#3{}\maketitle} % Wird gebraucht, damit der Title nicht im Inhaltsverzeichnis steht
 
 \begin{abstract}
-
+  Games provide the perfect environment for artificial agents to navigate in. Especially for the
   \keywords{AI \and Alpha-beta \and Q-Learning \and Abalone \and Intelligent Agents}
 \end{abstract}
 
 \section{Introduction}
 
-Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi \cite{noauthor_abalone_2020}. It is a two-player game
-Based on the \cite{russell_artificial_2021}
+Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi \cite{noauthor_abalone_2020}. It is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. The goal of the game is to push six of the opponent's marbles of the playing field.
+
+\subsection{Rules}
 
 \begin{figure}[!h]
   \centering
@@ -62,8 +63,6 @@ Based on the \cite{russell_artificial_2021}
   }
   \caption{Basic moves \cite{abalone_sa_abalone_nodate}}
 \end{figure}
-
-\subsection{Rules}
 
 \begin{figure}[!h]
   \centering
@@ -96,6 +95,17 @@ $$
 \section{Project details}
 
 \subsection{Agent design}
+
+Based on the PEAS framework we can analyze the task environment for the agent. \cite[p.107]{russell_artificial_2021}
+
+\begin{description}
+  \item[Performance measure] Win/loss, number of moves, time to deliberate
+  \item[Environment] Digital playing board
+  \item[Actuators] Move marbles, display text to CLI
+  \item[Sensors] Position of marbles
+\end{description}
+
+
 
 \subsection{Algorithm comparision}
 
