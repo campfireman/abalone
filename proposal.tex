@@ -48,22 +48,42 @@
 
 \section{Introduction}
 
-Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi \cite{noauthor_abalone_2020}. It is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. This gives the game a complexity, that makes it very interesting for the design of a game-playing agent. Even for modern computers it is not possible to expand of all possible moves. Hence, more sophisticated approaches for navigating the state space and evaluating good paths are needed. On the other hand, the game does not have piece specific rules or large distance moves which reduces the need for a very domain specific knowledge about the game like chess.
+Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi. Nevertheless, with more than four million global sales it could establish itself as a classic game \cite{noauthor_abalone_2020}. Ablalone is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. The abstract nature of the game requires the player to plan ahead and find the right strategy in the plethora of moves. The goal is to create an agent that is up to par with a human player and moreover, has realistic computational requirements and reacts quickly.
+
+In search of the optimal move it is not possible to expand all of the possible paths the game could take, even for modern computers. Hence, more sophisticated approaches for navigating the state space and evaluating good paths are needed. On the other hand, the game does not have piece-specific rules or large distance moves which reduces the need for a very domain specific knowledge about the game like e.g. for chess to find sensible heuristics.
+
+Overall, this complexity makes the game a good project for the design of a game playing-agent, as it is meant to be an opportunity to apply the fundamental principles and algorithms learned, as opposed to being distracted by the engineering aspects. This matches my personal background on the subject matter, as I have no prior (formal) exposure to the design of artificial intelligence. Over the course of my current study of applied computer science I gained versatile proficiency in programming and the handling of data which will help implementing the algorithms efficiently and provide the epirical foundation for the paper.
+
+\subsection{Survey}
+
+Considering the existing landscape of papers, there is unquestionably a wide array of papers exploring the application of minimax and alpha-beta pruning on the game of Abalone. Some of the most prominent include:
+
+\begin{enumerate}
+  \item "Algorithmic fun-abalone" (2002) \cite{aichholzer_algorithmic_2002}
+  \item "A Simple Intelligent Agent for Playing Abalone Game: ABLA" (2004)\cite{ozcan_simple_2004}
+  \item "Constructing an abalone game-playing agent" (2005)  \cite{lemmens_constructing_2005}
+  \item "Implementing a computer player for abalone using alpha-beta and monte-carlo search" (2009)\cite{chorus_implementing_2009}
+\end{enumerate}
 
 \subsection{Rules}
 
-The goal of the game is to push six of the opponent's marbles off the playing field.
+The goal of the game is to push six of the opponent's marbles off the playing field. The game's starting position is depicted in figure \ref{basics} (a). One, two, or three adjacent marbles (of the player's own color) may be moved in any of the six possible directions during a player's turn. We differentiate between broadside or "side-step" moves and "in-line" moves, depending on how the chain of marbles moves relative to its direction, which is shown in figure \ref{basics} (b) and (c).
 
 \begin{figure}[!h]
   \centering
+  \subfloat[Starting position]{
+    \includegraphics[width=3cm, keepaspectratio]{rules_starting_position.png}
+  }
+  \hfill
   \subfloat["In-line" moves]{
-    \includegraphics[width=5cm, keepaspectratio]{rules_inline_move.png}
+    \includegraphics[width=3cm, keepaspectratio]{rules_inline_move.png}
   }
   \hfill
   \subfloat["Side-step" moves]{
-    \includegraphics[width=5cm, keepaspectratio]{rules_side_step_move.png}
+    \includegraphics[width=3cm, keepaspectratio]{rules_side_step_move.png}
   }
   \caption{Basic moves \cite{abalone_sa_abalone_nodate}}
+  \label{basics}
 \end{figure}
 
 \begin{figure}[!h]
@@ -80,6 +100,7 @@ The goal of the game is to push six of the opponent's marbles off the playing fi
     \includegraphics[width=3cm, keepaspectratio]{rules_3-push-2_sumito.png}
   }
   \caption{Sumito positions allow pushing the opponent's marbles \cite{abalone_sa_abalone_nodate}}
+  \label{sumito}
 \end{figure}
 
 \subsection{Complexity}
@@ -115,7 +136,9 @@ Based on the PEAS framework we can analyze the task environment for the agent. \
 
 \paragraph{Monte Carlo Tree Search}
 
-\subsection{}
+\paragraph{Q-Learning}
+
+\subsection{Timeline}
 
 \section{Conclusion}
 
