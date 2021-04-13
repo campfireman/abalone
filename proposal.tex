@@ -33,7 +33,7 @@
 
 \begin{document}
 
-\title{Project proposal: Comparative exploration of old and modern AI Methods with Abalone}
+\title{Project proposal: Comparative exploration of Abalone game-playing agents}
 \author{Ture Claußen, 202132027, \email{ture.claussen@stud.hs-hannover.de}}
 \authorrunning{T. Claußen}
 \institute{Dept. of Software and Computer Engineering, Ajou University}
@@ -48,9 +48,11 @@
 
 \section{Introduction}
 
-Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi \cite{noauthor_abalone_2020}. It is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. The goal of the game is to push six of the opponent's marbles of the playing field.
+Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi \cite{noauthor_abalone_2020}. It is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. This gives the game a complexity, that makes it very interesting for the design of a game-playing agent. Even for modern computers it is not possible to expand of all possible moves. Hence, more sophisticated approaches for navigating the state space and evaluating good paths are needed. On the other hand, the game does not have piece specific rules or large distance moves which reduces the need for a very domain specific knowledge about the game like chess.
 
 \subsection{Rules}
+
+The goal of the game is to push six of the opponent's marbles off the playing field.
 
 \begin{figure}[!h]
   \centering
@@ -77,7 +79,7 @@ Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laure
   \subfloat["3-push-2" sumito]{
     \includegraphics[width=3cm, keepaspectratio]{rules_3-push-2_sumito.png}
   }
-  \caption{Sumito positions allow pushing the opponents marbles \cite{abalone_sa_abalone_nodate}}
+  \caption{Sumito positions allow pushing the opponent's marbles \cite{abalone_sa_abalone_nodate}}
 \end{figure}
 
 \subsection{Complexity}
@@ -92,6 +94,8 @@ $$
 
 \paragraph{Comparative complexity}
 
+\paragraph{Existing approaches}
+
 \section{Project details}
 
 \subsection{Agent design}
@@ -105,9 +109,11 @@ Based on the PEAS framework we can analyze the task environment for the agent. \
   \item[Sensors] Position of marbles
 \end{description}
 
-
-
 \subsection{Algorithm comparision}
+
+\paragraph{Alpha-beta pruning}
+
+\paragraph{Monte Carlo Tree Search}
 
 \subsection{}
 
