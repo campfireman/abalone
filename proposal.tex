@@ -10,7 +10,7 @@
 \else
    \ifXeTeX
      \usepackage{fontspec}
-   \else 
+   \else
      \usepackage{luatextra}
    \fi
    \defaultfontfeatures{Ligatures=TeX}
@@ -33,7 +33,7 @@
 
 \begin{document}
 
-\title{Comparative exploration of Abalone game-playing agents}
+\title{Exploration of classical and modern Abalone game-playing agents}
 \author{Ture Claußen, 202132027, \email{ture.claussen@stud.hs-hannover.de}}
 \authorrunning{T. Claußen}
 \institute{Dept. of Software and Computer Engineering, Ajou University}
@@ -42,20 +42,22 @@
 {\def\addcontentsline#1#2#3{}\maketitle} % Wird gebraucht, damit der Title nicht im Inhaltsverzeichnis steht
 
 \begin{abstract}
-  Games provide the perfect environment for artificial agents to navigate in. Especially for the
+  Perfect information games provide a good environment for artificial agents to navigate in, as they have a clear performance measure for comparison with each other and humans. Their determinism removes some of the engineering problems of agents in the physical world. In the following we implement and compare alpha-beta pruning, Monte Carlo Tree Search and Q-Learning for the game Abalone, to come to a conclusion about their resource-consumption and performance.
   \keywords{AI \and Alpha-beta \and Q-Learning \and Abalone \and Intelligent Agents}
 \end{abstract}
 
 \section{Introduction}
 
-Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi. Nevertheless, with more than four million global sales it could establish itself as a classic game \cite{noauthor_abalone_2020}. Ablalone is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. The abstract nature of the game requires the player to plan ahead and find the right strategy in the plethora of moves. The goal is to create an agent that is up to par with a human player and moreover, has realistic computational requirements and reacts quickly.
+Abalone is a fairly new game, that was devised in 1987 by Michel Lalet and Laurent Lévi. Nevertheless, with more than four million global sales it has established itself as a classic game \cite{noauthor_abalone_2020}. Abalone is a two-player game consisting of a hexagonal board with 61 fields and 14 marbles for black and white respectively. The abstract nature of the game requires the player to plan ahead and find the right strategy in the plethora of moves. The goal is to create an agent that is up to par with human players and moreover, has realistic computational requirements and reacts quickly.
 
 In search of the optimal move it is not possible to expand all of the possible paths the game could take, even for modern computers. Hence, more sophisticated approaches for navigating the state space and evaluating good paths are needed. On the other hand, the game does not have piece-specific rules or large distance moves which reduces the need for a very domain specific knowledge about the game like e.g. for chess to find sensible heuristics.
 
 \subsection{Motivation}
-Overall, this degree of complexity makes the game a good project for the design of a game playing-agent, as it is meant to be an opportunity to apply the fundamental principles and algorithms learned in the class, as opposed to being distracted by the engineering aspects. This matches my personal background on the subject matter, as I have no prior (formal) exposure to the design of artificial intelligence. In addition, this project is only created for the purpose of this class. Over the course of my current study of applied computer science I gained versatile proficiency in programming and the handling of data which will help implementing the algorithms efficiently and provide the empirical foundation for the paper.
+Overall, this degree of complexity makes the game a good project for the design of a game playing-agent, as it is meant to be an opportunity to apply the fundamental principles and algorithms learned in the class, as opposed to being distracted by the engineering aspects. This matches my personal background on the subject matter, as I have no prior (formal) exposure to the design of artificial intelligence. In addition, this project is only created for the purpose of this class.
 
-\subsection{Survey}
+Over the course of my current study of applied computer science I gained versatile proficiency in programming and the handling of data which will help implement the algorithms efficiently and provide the empirical foundation for the paper. The project will also be a valuable training for my upcoming bachelor thesis.
+
+\subsection{Related work}
 
 Considering the existing landscape of papers, there is unquestionably a wide array of papers exploring the application of minimax and alpha-beta pruning on the game of Abalone. Some of the most prominent include:
 
@@ -69,7 +71,7 @@ Considering the existing landscape of papers, there is unquestionably a wide arr
 These resources give great insight into the classical approaches, but they are lacking certain qualities:
 \begin{itemize}
   \item Accessible and freely explorable code that underlies the analysis
-  \item Comparision with modern approaches like Q-Learning that might reduce the resource demand on the client side
+  \item Comparison with modern approaches like Q-Learning that might reduce the resource demand on the client side
 \end{itemize}
 
 The proposed project seeks to build upon the given insight to improve upon these missing qualities.
@@ -94,7 +96,7 @@ The goal of the game is to push six of the opponent's marbles off the playing fi
   \label{basics}
 \end{figure}
 
-A move pushing the opponent's marbles is called "sumito" and comes in three variations, as shown by figure \ref{sumito}. Essentially, the player has to push with superior numbers and the oponent's marbles can not be blocked. This is the game mechanic that allows for pushing the marbles out of the game and winning.
+A move pushing the opponent's marbles is called "sumito" and comes in three variations, as shown by figure \ref{sumito}. Essentially, the player has to push with superior numbers and the opponent's marbles can not be blocked. This is the game mechanic that allows for pushing the marbles out of the game and winning.
 
 \begin{figure}[!h]
   \centering
@@ -126,18 +128,20 @@ Based on the PEAS framework we can analyze the task environment for the agent. \
   \item[Sensors] Position of marbles
 \end{description}
 
+If we look at the environment more closely we see that it is fully observable, two-agent, competitive, sequential, static and discrete.
+
 \subsection{Complexity}
-An important characteristic of a game environment is its complexity, which can be described two relevant dimensions.
+An important characteristic of a game environment is its complexity, which can be described in two relevant dimensions.
 
 \paragraph{State space complexity}
 
-The state space is the collection of all possible state the agent can be in.\cite[p. 150]{russell_artificial_2021} For Abalone this means we have to consider all possible board configurations with different numbers of marbles present. Additionally, we would have to correct duplicates, that arise from the symmetries of the board. Ignoring this fact the following gives a good upper bound:
+The state space is the collection of all possible states the agent can be in.\cite[p. 150]{russell_artificial_2021} For Abalone this means we have to consider all possible board configurations with different numbers of marbles present. Additionally, we would have to correct duplicates that arise from the symmetries of the board. Ignoring this fact the following gives a good upper bound:
 
 $$
   \sum_{k=8}^{14}\sum_{m=9}^{14}\frac{61!}{k!(61-k)!}\times\frac{(61-k)!}{m!((61-k)-m)!}
 $$
 
-\paragraph{Game tree complexity} The game tree defines the dependencies between board positions (nodes) and moves (edges). First we consider the branching factor (how many moves are possible in one position) of the game tree, which is on average 60.  \cite{lemmens_constructing_2005}
+\paragraph{Game tree complexity} The game tree defines the dependencies between board positions (nodes) and moves (edges). First we consider the branching factor (how many moves are possible in one position) of the game tree, which is on average 60. We combine that number with the height of the tree to get the total number of leaves. As the length of a game varies greatly, we use the average length of a game which is 87: $60^{87}$ \cite{lemmens_constructing_2005}
 
 Putting Abalone's complexity in relation with other popular games, its state space complexity is on the same level as Reversi, whilst its game tree surpasses chess in complexity (c.f. table \ref{complexity_table})
 
@@ -159,11 +163,11 @@ Putting Abalone's complexity in relation with other popular games, its state spa
       \hline
     \end{tabular}
   \end{center}
-  \caption{Abalone in comparision with other games \cite{chorus_implementing_2009}}
+  \caption{Abalone in comparison with other games \cite{chorus_implementing_2009}}
   \label{complexity_table}
 \end{table}
 
-\subsection{Algorithm comparision}
+\subsection{Algorithm comparison}
 The main goal of the project is to compare several algorithmic approaches for the game-playing agent. The approaches shall be evaluated and compared in their:
 
 \begin{itemize}
@@ -173,15 +177,15 @@ The main goal of the project is to compare several algorithmic approaches for th
 
 
 \paragraph{Alpha-beta pruning}
-This is the most explored and classical approach, wherefore it will form the baseline for the comparision. It will be necessary to find solutions on how to deal with the complexity of the game tree, such as iterative deepening, ordering of the nodes or various heuristics.
+This is the most explored and classical approach, wherefore it will form the baseline for the comparison. It will be necessary to find solutions on how to deal with the complexity of the game tree, such as iterative deepening, ordering of the nodes or various heuristics.
 
 \paragraph{Monte Carlo Tree Search}
-There are many strategies on how to implement the concept of Monte Carlo tree search, in this analysis the simplest approach will be utilized: Simulation of a certain amount of games to decide the next move.
+There are many strategies on how to implement the concept of Monte Carlo tree search, in this analysis the simplest approach will be utilized: Simulation of a certain number of games to decide the next move.
 
 \paragraph{Q-Learning}
 Even though this class does not look at reinforcement methods in particular, Q-Learning seems to be a suitable method for a machine-learning based agent. The fact that it is a more simple algorithm, should allow for a timely implementation.
 
-All three algorithms will be implemented from scratch, and played against each other. For the game environment several (python) libraries have been evaluated, namely "haliotis" \cite{noauthor_peer_nodate}, "Gym abalone" \cite{towzeur_towzeurgym-abalone_2021} and "Abalone BoAI" \cite{scriptim_scriptimabalone-boai_2021}. Both gym abalone and BoAI are specifically geared for the testing of intelligent agents, however, gym abalone is heavily focused on reinforcement-learning. Therefore, BoAI offers the simpler solution. If the gathering of empirical data or the training of the Q-Learning agent require computational resources, that exceed the ability of my personal Laptop, there is a budget of 30USD for buying compute time on a server.
+All three algorithms will be implemented from scratch, and played against each other. For the game environment several (python) libraries have been evaluated, namely "haliotis" \cite{noauthor_peer_nodate}, "Gym abalone" \cite{towzeur_towzeurgym-abalone_2021} and "Abalone BoAI" \cite{scriptim_scriptimabalone-boai_2021}. Both gym abalone and BoAI are specifically geared for the testing of intelligent agents, however, gym abalone is heavily focused on reinforcement-learning. Therefore, BoAI offers the simpler solution. If the gathering of empirical data or the training of the Q-Learning agent require computational resources that exceed the ability of my personal Laptop, there is a budget of 30USD for buying compute time on a server.
 
 \subsection{Timeline}
 
@@ -189,30 +193,31 @@ All three algorithms will be implemented from scratch, and played against each o
   \begin{center}
     \begin{tabular}{ | c | c | c | }
       \hline
-      Date  & Goal                                                  \\
+      Deadline & Goal                                                  \\
       \hline
-      05/03 & Design of heuristics, plan and setup code environment \\
+      05/03    & Design of heuristics, plan and setup code environment \\
       \hline
-      05/10 & Implementation of alpha-beta pruning agent            \\
+      05/10    & Implementation of alpha-beta pruning agent            \\
       \hline
-      05/17 & Implementation of MCTS agent                          \\
+      05/17    & Implementation of MCTS agent                          \\
       \hline
-      05/24 & Acquisition of background knowledge for Q-Learning    \\
+      05/24    & Acquisition of background knowledge for Q-Learning    \\
       \hline
-      05/31 & Implementation of Q-Learning agent                    \\
+      05/31    & Implementation of Q-Learning agent                    \\
       \hline
-      06/07 & Agent face-off, collection of data                    \\
+      06/07    & Agent face-off, collection of data                    \\
       \hline
-      06/15 & Project report and record presentation                \\
+      06/15    & Project report and record presentation                \\
       \hline
     \end{tabular}
   \end{center}
 \end{table}
 
 \subsection{Potential difficulties}
-There is certain risks involved with the project. First and foremost it is the Q-Learning agent could pose problems, as I am still unfamiliar with the implementation. Moreover, the library BoAI is not very popular, so there might be unexpected behavior down the line.
+There are certain risks involved with the project. First and foremost it is the Q-Learning agent could pose problems, due to the unfamiliarity with the implementation. Moreover, the library BoAI is not very popular, so there might be unexpected behavior down the line that could delay the progress significantly.
 
 \section{Conclusion}
+The design of a game-playing agent for the game Abalone will provide a great opportunity to apply the contents of the class and solidify the understanding. By making a comparison between the classical approach and reinforcement learning the up and downsides of the algorithms will become more clear. Lastly, the accessible code might make future research simpler.
 
 % Literatur
 \bibliographystyle{splncs04.bst}
