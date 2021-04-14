@@ -131,13 +131,13 @@ An important characteristic of a game environment is its complexity, which can b
 
 \paragraph{State space complexity}
 
-The state space is the collection of all possible state the agent can be in.\cite[p. 150]{russell_artificial_2021} For Abalone this means we have to consider all possible board configurations with different numbers of marbles present. Additionally, we would have to correct duplicates, that arise from the symmetries of the board. Ignoring this fact the following gives a good upper bound: \cite{lemmens_constructing_2005}
+The state space is the collection of all possible state the agent can be in.\cite[p. 150]{russell_artificial_2021} For Abalone this means we have to consider all possible board configurations with different numbers of marbles present. Additionally, we would have to correct duplicates, that arise from the symmetries of the board. Ignoring this fact the following gives a good upper bound:
 
 $$
   \sum_{k=8}^{14}\sum_{m=9}^{14}\frac{61!}{k!(61-k)!}\times\frac{(61-k)!}{m!((61-k)-m)!}
 $$
 
-\paragraph{Game tree complexity} First we consider the branching factor of the game tree
+\paragraph{Game tree complexity} The game tree defines the dependencies between board positions (nodes) and moves (edges). First we consider the branching factor (how many moves are possible in one position) of the game tree, which is on average 60.  \cite{lemmens_constructing_2005}
 
 Putting Abalone's complexity in relation with other popular games, its state space complexity is on the same level as Reversi, whilst its game tree surpasses chess in complexity (c.f. table \ref{complexity_table})
 
@@ -184,6 +184,33 @@ Even though this class does not look at reinforcement methods in particular, Q-L
 All three algorithms will be implemented from scratch, and played against each other. For the game environment several (python) libraries have been evaluated, namely "haliotis" \cite{noauthor_peer_nodate}, "Gym abalone" \cite{towzeur_towzeurgym-abalone_2021} and "Abalone BoAI" \cite{scriptim_scriptimabalone-boai_2021}. Both gym abalone and BoAI are specifically geared for the testing of intelligent agents, however, gym abalone is heavily focused on reinforcement-learning. Therefore, BoAI offers the simpler solution. If the gathering of empirical data or the training of the Q-Learning agent require computational resources, that exceed the ability of my personal Laptop, there is a budget of 30USD for buying compute time on a server.
 
 \subsection{Timeline}
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | c | c | c | }
+      \hline
+      Date  & Goal                                                  \\
+      \hline
+      05/03 & Design of heuristics, plan and setup code environment \\
+      \hline
+      05/10 & Implementation of alpha-beta pruning agent            \\
+      \hline
+      05/17 & Implementation of MCTS agent                          \\
+      \hline
+      05/24 & Acquisition of background knowledge for Q-Learning    \\
+      \hline
+      05/31 & Implementation of Q-Learning agent                    \\
+      \hline
+      06/07 & Agent face-off, collection of data                    \\
+      \hline
+      06/15 & Project report and record presentation                \\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{Potential difficulties}
+There is certain risks involved with the project. First and foremost it is the Q-Learning agent could pose problems, as I am still unfamiliar with the implementation. Moreover, the library BoAI is not very popular, so there might be unexpected behavior down the line.
 
 \section{Conclusion}
 
