@@ -80,8 +80,8 @@ def run_game(black: AbstractPlayer, white: AbstractPlayer, **kwargs) \
 
     while True:
         score = game.get_score()
-        # score_str = f'BLACK {score[0]} - WHITE {score[1]}'
-        # print(score_str, game, '', sep='\n')
+        score_str = f'BLACK {score[0]} - WHITE {score[1]}'
+        print(score_str, game, '', sep='\n')
 
         winner = _get_winner(score)
         if winner is not None:
@@ -93,13 +93,13 @@ def run_game(black: AbstractPlayer, white: AbstractPlayer, **kwargs) \
             move = black.turn(game, moves_history) if game.turn is Player.BLACK else white.turn(
                 game, moves_history)
             end = time.time()
-            legal_moves = list(game.generate_legal_moves())
-            print(sys.getsizeof(game))
-            count[len(legal_moves)] += 1
+            # legal_moves = list(game.generate_legal_moves())
+            # print(sys.getsizeof(game))
+            # count[len(legal_moves)] += 1
 
-            # print(f'Time to deliberate: {end-start}')
-            # print(_format_move(game.turn, move, len(moves_history)), end='\n\n')
-            print(move)
+            print(f'Time to deliberate: {end-start}')
+            print(_format_move(game.turn, move, len(moves_history)), end='\n\n')
+            # print(move)
             game.move(*move)
             game.switch_player()
             moves_history.append(move)
@@ -148,6 +148,6 @@ if __name__ == '__main__':  # pragma: no cover
     end = time.time()
     print(f'Time to simulate: {end-start}')
 
-    write_to_file(total, f'{time.time()}_data.json')
-    plt.bar(total.keys(), total.values())
-    plt.show()
+    # write_to_file(total, f'{time.time()}_data.json')
+    # plt.bar(total.keys(), total.values())
+    # plt.show()

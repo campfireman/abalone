@@ -2,19 +2,20 @@
 """This module is a collection of various AI agents"""
 import copy
 import random
+from collections import defaultdict
 from operator import itemgetter
 from random import choice
 from typing import List, Tuple, Union
 
 from abalone.abstract_player import AbstractPlayer
-from abalone.enums import Direction, Space
+from abalone.enums import Direction, Marble, Player, Space
 from abalone.game import Game
 
 import utils
 
 
 class AlphaBetaBase:
-    def __init__(self, game: Game, depth: int, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
+    def __init__(self, game: Game, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -23,7 +24,7 @@ class AlphaBetaBase:
         self.marbles = marbles
         self.direction = direction
 
-    def _heuristic(self):
+    def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
 
     def _order_children(self, children: List[Game]) -> List[Game]:
@@ -34,17 +35,19 @@ class AlphaBetaBase:
             return result
         return (result[0], self.marbles, self.direction)
 
-    def _create_children(self) -> List[Tuple[Game]]:
+    def _create_children(self) -> List[Tuple[Game, Union[Space, Tuple[Space, Space]], Direction, float]]:
         result = []
         for move in self.game.generate_legal_moves():
             child = copy.deepcopy(self.game)
             child.move(*move)
-            result.append((child, move[0], move[1]))
+            # child.switch_player()
+            heuristic = self._heuristic(child)
+            result.append((child, move[0], move[1], heuristic))
         return self._order_children(result)
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
         if self.depth == 0 or utils.game_is_over(self.game.get_score()):
-            return self._end((self._heuristic(), None, None))
+            return self._end((self._heuristic(self.game), None, None))
         if self.is_maximizer:
             value = (float('-inf'), None, None)
             for child in self._create_children():
@@ -65,8 +68,46 @@ class AlphaBetaBase:
 
 
 class AlphaBetaSimple(AlphaBetaBase):
-    def _heuristic(self):
-        return random.randrange(-100, 100)
+    def _order_children(self, children):
+        children.sort(key=itemgetter(3), reverse=True)
+        return children
+
+    def _heuristic(self, game: Game) -> float:
+        '''
+        TODO: distance
+        '''
+        sum_count = defaultdict(int)
+        sum_distance = defaultdict(int)
+        for i, row in enumerate(game.board):
+            for j, marble in enumerate(row):
+                if marble == Marble.BLANK:
+                    continue
+                # adjacency
+                for r in [-1, 0, 1]:
+                    for d in [-1, 0, 1]:
+                        if (r == -1 and d == 1 and i < 5) or (r == 0 and d == 0) or (r == 1 and d == -1 and i < 5) or (r == 1 and d == 1 and i >= 5) or (r == -1 and d == -1 and i >= 5):
+                            continue
+                        y = i + r
+                        x = j + d
+                        if y < 0 or x < 0:
+                            continue
+                        try:
+
+                            neighbor = game.board[y][x]
+                            if neighbor == marble:
+                                sum_count[marble.value] += 1
+                        except IndexError:
+                            continue
+                # distance
+
+        w_1 = 1
+        w_2 = -1
+        adjacency = sum_count[game.turn.value] - \
+            sum_count[game.not_in_turn_player().value]
+        # distance = sum_count[game.turn.value] - \
+        # sum_count[game.not_in_turn_player().value]
+        distance = 0
+        return w_1 * adjacency + w_2 * distance
 
 
 class AlphaBetaPlayer(AbstractPlayer):
@@ -77,5 +118,5 @@ class AlphaBetaPlayer(AbstractPlayer):
     '''
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = AlphaBetaSimple(game, 3).run()
+        result = AlphaBetaSimple(game).run()
         return [result[1], result[2]]
