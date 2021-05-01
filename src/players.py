@@ -107,6 +107,7 @@ class AlphaBetaSimple(AlphaBetaBase):
         # distance = sum_count[game.turn.value] - \
         # sum_count[game.not_in_turn_player().value]
         distance = 0
+
         return w_1 * adjacency + w_2 * distance
 
 
