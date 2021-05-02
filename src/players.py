@@ -102,13 +102,18 @@ class AlphaBetaSimple(AlphaBetaBase):
 
         w_1 = 1
         w_2 = -1
+        w_3 = 10000
         adjacency = sum_count[game.turn.value] - \
             sum_count[game.not_in_turn_player().value]
         # distance = sum_count[game.turn.value] - \
         # sum_count[game.not_in_turn_player().value]
         distance = 0
 
-        return w_1 * adjacency + w_2 * distance
+        score = game.get_score()
+        counter = score[0] if game.turn == Player.BLACK else score[1]
+        denominator = score[1] if game.turn == Player.BLACK else score[0]
+
+        return w_1 * adjacency + w_2 * distance + (counter / denominator) * w_3
 
 
 class AlphaBetaPlayer(AbstractPlayer):
