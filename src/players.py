@@ -11,7 +11,8 @@ from abalone.abstract_player import AbstractPlayer
 from abalone.enums import Direction, Marble, Player, Space
 from abalone.game import Game
 
-import utils
+from . import utils
+from .hex import Cube
 
 
 class AlphaBetaBase:
@@ -78,17 +79,18 @@ class AlphaBetaSimple(AlphaBetaBase):
         '''
         sum_count = defaultdict(int)
         sum_distance = defaultdict(int)
-        for i, row in enumerate(game.board):
-            for j, marble in enumerate(row):
+        center = Cube.from_board_array(4, 4)
+        for y, row in enumerate(game.board):
+            for x, marble in enumerate(row):
                 if marble == Marble.BLANK:
                     continue
                 # adjacency
                 for r in [-1, 0, 1]:
                     for d in [-1, 0, 1]:
-                        if (r == -1 and d == 1 and i < 5) or (r == 0 and d == 0) or (r == 1 and d == -1 and i < 5) or (r == 1 and d == 1 and i >= 5) or (r == -1 and d == -1 and i >= 5):
+                        if (r == -1 and d == 1 and y < 5) or (r == 0 and d == 0) or (r == 1 and d == -1 and y < 5) or (r == 1 and d == 1 and y >= 5) or (r == -1 and d == -1 and y >= 5):
                             continue
-                        y = i + r
-                        x = j + d
+                        y = y + r
+                        x = x + d
                         if y < 0 or x < 0:
                             continue
                         try:
@@ -99,21 +101,26 @@ class AlphaBetaSimple(AlphaBetaBase):
                         except IndexError:
                             continue
                 # distance
+                c = Cube.from_board_array(x, y)
+                sum_distance[marble.value] += c.distance(center)
+                # print(
+                #     f'y: {y} x: {x} dist: {c.distance(center)} \
+                #         c_x: {c.x} c_y: {c.y} c_z: {c.z}')
 
         w_1 = 1
         w_2 = -1
         w_3 = 10000
         adjacency = sum_count[game.turn.value] - \
             sum_count[game.not_in_turn_player().value]
-        # distance = sum_count[game.turn.value] - \
-        # sum_count[game.not_in_turn_player().value]
-        distance = 0
+        distance = sum_distance[game.turn.value] - \
+            sum_distance[game.not_in_turn_player().value]
 
         score = game.get_score()
         counter = score[0] if game.turn == Player.BLACK else score[1]
         denominator = score[1] if game.turn == Player.BLACK else score[0]
+        marble_ratio = (counter / denominator)
 
-        return w_1 * adjacency + w_2 * distance + (counter / denominator) * w_3
+        return w_1 * adjacency + w_2 * distance + marble_ratio * w_3
 
 
 class AlphaBetaPlayer(AbstractPlayer):

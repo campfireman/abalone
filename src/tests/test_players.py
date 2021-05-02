@@ -19,7 +19,7 @@ def _validate_board(self, board: List[List]):
 def test_heuristic():
     boards = [{
         'value': InitialPosition.DEFAULT.value,
-        'expected_heuristic': 0.0,
+        'expected_heuristic': 10000.0,
         'in_turn': Player.BLACK,
     }]
     game = Game()
