@@ -76,47 +76,42 @@ class AlphaBetaSimple(AlphaBetaBase):
     def _heuristic(self, game: Game) -> float:
         '''
         TODO:
-            - refactor adjacency to use new Cube class
             - make individual heuristics testable
             - collect and store game metrics
             - visualize game metrics
             - save game tree
         '''
-        sum_count = defaultdict(int)
+        sum_adjacency = defaultdict(int)
         sum_distance = defaultdict(int)
         center = Cube.from_board_array(4, 4)
-        for y, row in enumerate(game.board):
-            for x, marble in enumerate(row):
-                if marble == Marble.BLANK:
-                    continue
-                # adjacency
-                for r in [-1, 0, 1]:
-                    for d in [-1, 0, 1]:
-                        if (r == -1 and d == 1 and y < 5) or (r == 0 and d == 0) or (r == 1 and d == -1 and y < 5) or (r == 1 and d == 1 and y >= 5) or (r == -1 and d == -1 and y >= 5):
-                            continue
-                        y = y + r
-                        x = x + d
-                        if y < 0 or x < 0:
-                            continue
-                        try:
 
-                            neighbor = game.board[y][x]
-                            if neighbor == marble:
-                                sum_count[marble.value] += 1
-                        except IndexError:
-                            continue
-                # distance
+        for y, row in enumerate(game.board):
+            for x, current_marble in enumerate(row):
+                if current_marble == Marble.BLANK:
+                    continue
                 c = Cube.from_board_array(x, y)
-                sum_distance[marble.value] += c.distance(center)
-                # print(
-                #     f'y: {y} x: {x} dist: {c.distance(center)} \
-                #         c_x: {c.x} c_y: {c.y} c_z: {c.z}')
+                # adjacency
+                for neighbor in Cube.neighbor_indices():
+                    n = Cube(neighbor[0], neighbor[1], neighbor[2]).add(c)
+                    xn, yn = n.to_board_array()
+                    if yn < 0 or xn < 0:
+                        continue
+                    try:
+                        neighbor_marble = game.board[yn][xn]
+                        if neighbor_marble == current_marble:
+                            sum_adjacency[current_marble.value] += 1
+                    except IndexError:
+                        continue
+                # distance
+                sum_distance[current_marble.value] += c.distance(center)
 
         w_1 = 1
         w_2 = -1
         w_3 = 10000
-        adjacency = sum_count[game.turn.value] - \
-            sum_count[game.not_in_turn_player().value]
+
+        adjacency = sum_adjacency[game.turn.value] - \
+            sum_adjacency[game.not_in_turn_player().value]
+
         distance = sum_distance[game.turn.value] - \
             sum_distance[game.not_in_turn_player().value]
 
