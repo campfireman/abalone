@@ -19,12 +19,23 @@ def _validate_board(self, board: List[List]):
 def test_heuristic():
     boards = [{
         'value': InitialPosition.DEFAULT.value,
-        'expected_heuristic': 10000.0,
         'in_turn': Player.BLACK,
+        'expected_adjacency_black': 54,
+        'expected_adjacency_white': 54,
+        'expected_distance_black': 46,
+        'expected_distance_white': 46,
+        'expected_heuristic': 10000.0,
     }]
+
     game = Game()
+
     for board in boards:
         game.board = board['value']
         game.turn = board['in_turn']
         algorithm = players.AlphaBetaSimple(game)
+        counts = algorithm._count_heuristics(game)
+        assert counts['sum_adjacency'][Player.BLACK.value] == board['expected_adjacency_black']
+        assert counts['sum_adjacency'][Player.WHITE.value] == board['expected_adjacency_white']
+        assert counts['sum_distance'][Player.BLACK.value] == board['expected_distance_black']
+        assert counts['sum_distance'][Player.WHITE.value] == board['expected_distance_white']
         assert algorithm._heuristic(game) == board['expected_heuristic']

@@ -73,16 +73,10 @@ class AlphaBetaSimple(AlphaBetaBase):
         children.sort(key=itemgetter(3), reverse=True)
         return children
 
-    def _heuristic(self, game: Game) -> float:
-        '''
-        TODO:
-            - make individual heuristics testable
-            - collect and store game metrics
-            - visualize game metrics
-            - save game tree
-        '''
-        sum_adjacency = defaultdict(int)
-        sum_distance = defaultdict(int)
+    def _count_heuristics(self, game: Game) -> dict:
+        result = {}
+        result['sum_adjacency'] = defaultdict(int)
+        result['sum_distance'] = defaultdict(int)
         center = Cube.from_board_array(4, 4)
 
         for y, row in enumerate(game.board):
@@ -99,21 +93,32 @@ class AlphaBetaSimple(AlphaBetaBase):
                     try:
                         neighbor_marble = game.board[yn][xn]
                         if neighbor_marble == current_marble:
-                            sum_adjacency[current_marble.value] += 1
+                            result['sum_adjacency'][current_marble.value] += 1
                     except IndexError:
                         continue
                 # distance
-                sum_distance[current_marble.value] += c.distance(center)
+                result['sum_distance'][current_marble.value] += c.distance(
+                    center)
+        return result
+
+    def _heuristic(self, game: Game) -> float:
+        '''
+        TODO:
+            - collect and store game metrics
+            - visualize game metrics
+            - save game tree
+        '''
+
+        counts = self._count_heuristics(game)
 
         w_1 = 1
         w_2 = -1
         w_3 = 10000
+        adjacency = counts['sum_adjacency'][game.turn.value] - \
+            counts['sum_adjacency'][game.not_in_turn_player().value]
 
-        adjacency = sum_adjacency[game.turn.value] - \
-            sum_adjacency[game.not_in_turn_player().value]
-
-        distance = sum_distance[game.turn.value] - \
-            sum_distance[game.not_in_turn_player().value]
+        distance = counts['sum_distance'][game.turn.value] - \
+            counts['sum_distance'][game.not_in_turn_player().value]
 
         score = game.get_score()
         counter = score[0] if game.turn == Player.BLACK else score[1]
