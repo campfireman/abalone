@@ -75,7 +75,12 @@ class AlphaBetaSimple(AlphaBetaBase):
 
     def _heuristic(self, game: Game) -> float:
         '''
-        TODO: distance
+        TODO:
+            - refactor adjacency to use new Cube class
+            - make individual heuristics testable
+            - collect and store game metrics
+            - visualize game metrics
+            - save game tree
         '''
         sum_count = defaultdict(int)
         sum_distance = defaultdict(int)
@@ -125,9 +130,6 @@ class AlphaBetaSimple(AlphaBetaBase):
 
 class AlphaBetaPlayer(AbstractPlayer):
     '''
-    TODO:
-        - basic heuristic
-        - ordering of nodes
     '''
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
