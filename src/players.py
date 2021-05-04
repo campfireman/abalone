@@ -104,7 +104,6 @@ class AlphaBetaSimple(AlphaBetaBase):
     def _heuristic(self, game: Game) -> float:
         '''
         TODO:
-            - collect and store game metrics
             - visualize game metrics
             - save game tree
         '''
@@ -131,6 +130,13 @@ class AlphaBetaSimple(AlphaBetaBase):
 class AlphaBetaPlayer(AbstractPlayer):
     '''
     '''
+
+    def __str__(self):
+        return f'AlphaBetaPlayer_{self.version}'
+
+    @property
+    def version(self) -> str:
+        return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
         result = AlphaBetaSimple(game).run()
