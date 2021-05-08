@@ -16,7 +16,7 @@ from .hex import Cube
 
 
 class AlphaBetaBase:
-    def __init__(self, game: Game, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
+    def __init__(self, game: Game, perspective: Player, depth: int = 2, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = False, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -24,12 +24,17 @@ class AlphaBetaBase:
         self.is_maximizer = is_maximizer
         self.marbles = marbles
         self.direction = direction
+        self.player = perspective
+        self.not_player = Player.BLACK.value if perspective == Player.WHITE.value else Player.BLACK.value
 
     def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
 
     def _order_children(self, children: List[Game]) -> List[Game]:
         return children
+
+    def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+        return 0.0
 
     def _end(self, result: Tuple[int, Union[Space, Tuple[Space, Space]], Direction]):
         if self.marbles is None and self.direction is None:
@@ -41,9 +46,10 @@ class AlphaBetaBase:
         for move in self.game.generate_legal_moves():
             child = copy.deepcopy(self.game)
             child.move(*move)
-            # child.switch_player()
-            heuristic = self._heuristic(child)
-            result.append((child, move[0], move[1], heuristic))
+            child.switch_player()
+            evaluation = self._evaluate_move(child, move[0], move[1])
+            if evaluation > 0:
+                result.append((child, move[0], move[1], evaluation))
         return self._order_children(result)
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
@@ -51,9 +57,10 @@ class AlphaBetaBase:
             return self._end((self._heuristic(self.game), None, None))
         if self.is_maximizer:
             value = (float('-inf'), None, None)
+            # print(self._create_children())
             for child in self._create_children():
                 value = max(value, self.__class__(
-                    child[0], self.depth - 1, self.alpha, self.beta, False, child[1], child[2]).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2]).run(), key=itemgetter(0))
                 self.alpha = max(self.alpha, value[0])
                 if self.alpha >= self.beta:
                     break
@@ -61,7 +68,7 @@ class AlphaBetaBase:
             value = (float('inf'), None, None)
             for child in self._create_children():
                 value = min(value, self.__class__(
-                    child[0], self.depth - 1, self.alpha, self.beta, True, child[1], child[2]).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2]).run(), key=itemgetter(0))
                 self.beta = min(self.beta, value[0])
                 if self.beta <= self.alpha:
                     break
@@ -70,8 +77,18 @@ class AlphaBetaBase:
 
 class AlphaBetaSimple(AlphaBetaBase):
     def _order_children(self, children):
-        children.sort(key=itemgetter(3), reverse=True)
+        children.sort(key=itemgetter(3), reverse=self.is_maximizer)
         return children
+
+    def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+        old_score = self.game.get_score()
+        new_score = result.get_score()
+        enemy_selector = 1 if self.player == Player.BLACK.value else 0
+        self_selector = 0 if self.player == Player.BLACK.value else 1
+        captured = old_score[enemy_selector] - new_score[enemy_selector]
+        # lost = old_score[self_selector] - new_score[self_selector]
+        count = 1 if isinstance(marbles, tuple) else 0
+        return captured + count
 
     def _count_heuristics(self, game: Game) -> dict:
         result = {}
@@ -113,15 +130,15 @@ class AlphaBetaSimple(AlphaBetaBase):
         w_1 = 1
         w_2 = -1
         w_3 = 10000
-        adjacency = counts['sum_adjacency'][game.turn.value] - \
-            counts['sum_adjacency'][game.not_in_turn_player().value]
+        adjacency = counts['sum_adjacency'][self.player] - \
+            counts['sum_adjacency'][self.not_player]
 
-        distance = counts['sum_distance'][game.turn.value] - \
-            counts['sum_distance'][game.not_in_turn_player().value]
+        distance = counts['sum_distance'][self.player] - \
+            counts['sum_distance'][self.not_player]
 
         score = game.get_score()
-        counter = score[0] if game.turn == Player.BLACK else score[1]
-        denominator = score[1] if game.turn == Player.BLACK else score[0]
+        counter = score[0] if self.player == Player.BLACK.value else score[1]
+        denominator = score[1] if self.player == Player.BLACK.value else score[0]
         marble_ratio = (counter / denominator)
 
         return w_1 * adjacency + w_2 * distance + marble_ratio * w_3
@@ -139,5 +156,5 @@ class AlphaBetaPlayer(AbstractPlayer):
         return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = AlphaBetaSimple(game).run()
+        result = AlphaBetaSimple(game, game.turn).run()
         return [result[1], result[2]]

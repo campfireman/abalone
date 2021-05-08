@@ -165,23 +165,34 @@ def run_game(black: AbstractPlayer, white: AbstractPlayer, is_verbose: bool = Tr
 
 if __name__ == '__main__':  # pragma: no cover
     # Run a game from the command line with default configuration.
+    import argparse
     import importlib
     import sys
 
-    if len(sys.argv) != 3:
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('player_black', metavar='blk', type=str,
+                        help='Python path to the Player module for black')
+    parser.add_argument('player_white', metavar='wht', type=str,
+                        help='Python path to the Player module for black')
+    parser.add_argument('-g', '--games', type=int,
+                        default=1,
+                        help='Number of games to play')
+    parser.add_argument('-v', '--verbose', type=bool,
+                        default=False, const=True, nargs='?',
+                        help='Print the game output')
 
-    black_str = sys.argv[1].rsplit('.', 1)
+    args = parser.parse_args()
+
+    black_str = args.player_black.rsplit('.', 1)
     black = getattr(importlib.import_module(black_str[0]), black_str[1])()
-    white_str = sys.argv[2].rsplit('.', 1)
+    white_str = args.player_white.rsplit('.', 1)
     white = getattr(importlib.import_module(white_str[0]), white_str[1])()
 
-    N_GAMES = 1
     total = defaultdict(int)
-    for i in range(0, N_GAMES):
+    for i in range(0, args.games):
         print(f'Starting game {i}')
         start = time.time()
-        game, moves_history, move_stats = run_game(black, white)
+        game, moves_history, move_stats = run_game(black, white, args.verbose)
         end = time.time()
         score = game.get_score()
         total_time = end-start
@@ -194,6 +205,7 @@ if __name__ == '__main__':  # pragma: no cover
             moves=move_stats,
         ).save()
         print(f'Time to simulate: {total_time}')
+        print(f'Total moves: {len(moves_history)}')
 
     # write_to_file(total, f'{time.time()}_data.json')
     # plt.bar(total.keys(), total.values())
