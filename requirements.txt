@@ -1,4 +1,3 @@
-abalone-boai==1.0.0
 attrs==20.3.0
 blessed==1.17.6
 colorama==0.4.4
