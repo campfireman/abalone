@@ -15,11 +15,9 @@ from abalone.game import Game, _space_to_board_indices
 from . import utils
 from .hex import Cube
 
-PRUNED = 0
-
 
 class AlphaBetaBase:
-    def __init__(self, game: Game, perspective: Player, depth: int = 4, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
+    def __init__(self, game: Game, perspective: Player, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -40,7 +38,6 @@ class AlphaBetaBase:
         return 0.0
 
     def _end(self, result: Tuple[int, Union[Space, Tuple[Space, Space]], Direction]):
-        print(f'nodes visited: {PRUNED}')
         if self.marbles is None and self.direction is None:
             return result
         return (result[0], self.marbles, self.direction)
@@ -53,17 +50,15 @@ class AlphaBetaBase:
             child.switch_player()
             evaluation = self._evaluate_move(child, move[0], move[1])
             result.append((child, move[0], move[1], evaluation))
-        result = self._order_children(result)[:10]
+        result = self._order_children(result)[:30]
         return result
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
-        global PRUNED
         if self.depth == 0 or utils.game_is_over(self.game.get_score()):
             return self._end((self._heuristic(self.game), None, None))
         if self.is_maximizer:
             value = (float('-inf'), None, None)
             for child in self._create_children():
-                PRUNED += 1
                 value = max(value, self.__class__(
                     child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2]).run(), key=itemgetter(0))
                 self.alpha = max(self.alpha, value[0])
@@ -72,7 +67,6 @@ class AlphaBetaBase:
         else:
             value = (float('inf'), None, None)
             for child in self._create_children():
-                PRUNED += 1
                 value = min(value, self.__class__(
                     child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2]).run(), key=itemgetter(0))
                 self.beta = min(self.beta, value[0])
