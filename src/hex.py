@@ -13,6 +13,9 @@ class Cube:
         self.y = y
         self.z = z
 
+    def __str__(self):
+        return f'x: {self.x} y: {self.y} z: {self.z}'
+
     @classmethod
     def from_axial(cls, q: int, r: int) -> Cube:
         return cls(q, -q - r, r)
