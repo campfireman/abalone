@@ -61,7 +61,6 @@ def test_heuristic():
         game.turn = board['in_turn']
         algorithm = players.AlphaBetaSimple(game, game.turn.value)
         counts = algorithm._count_heuristics(game)
-        print(counts)
         assert counts['sum_adjacency'][Player.BLACK.value] == board['expected_adjacency_black']
         assert counts['sum_adjacency'][Player.WHITE.value] == board['expected_adjacency_white']
         assert counts['sum_distance'][Player.BLACK.value] == board['expected_distance_black']

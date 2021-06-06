@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """This module is a collection of various AI agents"""
+from __future__ import annotations
+
 import copy
 import random
 from collections import defaultdict
@@ -10,10 +12,11 @@ from typing import List, Tuple, Union
 
 from abalone.abstract_player import AbstractPlayer
 from abalone.enums import Direction, Marble, Player, Space
-from abalone.game import Game, _space_to_board_indices
+from abalone.game import Game
+from abalone.hex import Cube
+from abalone.utils import line_to_edge, space_to_board_indices
 
 from . import utils
-from .hex import Cube
 
 
 class AlphaBetaBase:
@@ -96,9 +99,15 @@ class AlphaBetaSimple(AlphaBetaBase):
 
         multiple = 0
         if isinstance(marbles, tuple):
-            c1 = Cube.from_board_array(*_space_to_board_indices(marbles[0]))
-            c2 = Cube.from_board_array(*_space_to_board_indices(marbles[1]))
+            c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
+            c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
             multiple = c1.distance(c2)
+        else:
+            line = line_to_edge(marbles, direction)
+            own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
+                line)
+            multiple = own_marbles_num - 1
+
         # weights for the linear combination
         w_0 = 1
         w_1 = 3
@@ -114,7 +123,7 @@ class AlphaBetaSimple(AlphaBetaBase):
             for x, current_marble in enumerate(row):
                 if current_marble == Marble.BLANK:
                     continue
-                c = Cube.from_board_array(x, y)
+                c = Cube.from_board_array(y, x)
                 # adjacency
                 for neighbor in Cube.neighbor_indices():
                     n = Cube(neighbor[0], neighbor[1], neighbor[2]).add(c)
@@ -141,7 +150,7 @@ class AlphaBetaSimple(AlphaBetaBase):
         if utils.game_is_over(score):
             w_0 = 100000
             winner = utils.get_winner(score)
-            return w_0 * 1 if winner == self.player else w_0 * -1
+            return w_0 * 1 if winner.value == self.player else w_0 * -1
         counts = self._count_heuristics(game)
 
         adjacency = counts['sum_adjacency'][self.player] - \
@@ -182,3 +191,96 @@ class AlphaBetaPlayer(AbstractPlayer):
             game, game.turn.value).run()
         print(result[0])
         return [result[1], result[2]]
+
+
+class MctsNode:
+    def __init__(self, game: Game, parent: MctsNode, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
+        self.game = game
+        self.parent = parent
+        self.marbles = marbles
+        self.direction = direction
+        self.black_stats = 0
+        self.white_stats = 0
+        self.children = []
+
+    @property
+    def stats(self) -> (int, int):
+        return (self.black_stats, self.white_stats)
+
+    def append_child(self, child: MctsNode):
+        self.children.append(child)
+
+    def update_stats(self, new: Tuple[int, int]):
+        self.black_stats += new[0]
+        self.white_stats += new[1]
+
+
+class MonteCarloSearch:
+    def __init__(self, game: Game, playouts=5, max_plies=200):
+        self.game = game
+        self.playouts = playouts
+        self.max_plies = max_plies
+        self.player = self.game.turn.value
+        self.not_player = self.game.not_in_turn_player().value
+
+    def run(self) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        root = MctsNode(self.game, None)
+        child_count = 0
+        for move in self.game.generate_legal_moves():
+            next_state = copy.deepcopy(self.game)
+            next_state.move(*move)
+            next_state.switch_player()
+            child = MctsNode(next_state, root, *move)
+            sim_count = 0
+            child_count += 1
+            root.append_child(child)
+            for _ in range(self.playouts):
+                result = self.playout(child)
+                child.update_stats(result)
+                self.backpropagate(child, result)
+                sim_count += 1
+                # print(f'child_count: {child_count} sim_count: {sim_count}')
+        return self.choose_best(root)
+
+    def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        best = None
+        for child in root.children:
+            if best is None:
+                best = child
+            else:
+                if best.stats[self.player] < child.stats[self.player]:
+                    best = child
+        return (best.marbles, best.direction)
+
+    def backpropagate(self, node: MctsNode, result: Tuple[int, int]):
+        while (node.parent != None):
+            node.parent.update_stats(result)
+            node = node.parent
+
+    def playout_policy(self, state: game):
+        # legal_moves = list(state.generate_legal_moves())
+        # return choice(legal_moves)
+        return state.generate_random_move()
+
+    def playout(self, node: MctsNode):
+        plies = 0
+        state = copy.deepcopy(node.game)
+        score = state.get_score()
+        while (plies < self.max_plies and not utils.game_is_over(score)):
+            move = self.playout_policy(state)
+            state.move(*move)
+            state.switch_player()
+            score = state.get_score()
+            plies += 1
+        if score[0] > score[1]:
+            return (1, 0)
+        elif score[0] < score[1]:
+            return (0, 1)
+        else:
+            return (0, 0)
+
+
+class MonteCarloPlayer(AbstractPlayer):
+    def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        result = MonteCarloSearch(game).run()
+        return result
