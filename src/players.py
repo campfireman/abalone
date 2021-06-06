@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import random
+import time
 from collections import defaultdict
 from math import floor
 from operator import itemgetter
@@ -216,30 +217,37 @@ class MctsNode:
 
 
 class MonteCarloSearch:
-    def __init__(self, game: Game, playouts=5, max_plies=200):
+    def __init__(self, game: Game, max_time=7, playouts=2, max_plies=200):
         self.game = game
+        self.max_time = max_time
         self.playouts = playouts
         self.max_plies = max_plies
         self.player = self.game.turn.value
         self.not_player = self.game.not_in_turn_player().value
+        self.counter = 0
 
     def run(self) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
         root = MctsNode(self.game, None)
         child_count = 0
+        sim_count = 0
+        start_time = time.time()
+
+        # inititalize tree
         for move in self.game.generate_legal_moves():
             next_state = copy.deepcopy(self.game)
             next_state.move(*move)
             next_state.switch_player()
             child = MctsNode(next_state, root, *move)
-            sim_count = 0
-            child_count += 1
             root.append_child(child)
-            for _ in range(self.playouts):
-                result = self.playout(child)
-                child.update_stats(result)
-                self.backpropagate(child, result)
-                sim_count += 1
-                # print(f'child_count: {child_count} sim_count: {sim_count}')
+
+        # exhaust time resources
+        while time.time() - start_time < self.max_time:
+            leaf = self.traverse(root)
+            simulation_result = self.playout(leaf)
+            self.backpropagate(leaf, simulation_result)
+            child_count += 1
+            sim_count += 1
+            # print(f'child_count: {self.counter} sim_count: {sim_count}')
         return self.choose_best(root)
 
     def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
@@ -258,26 +266,37 @@ class MonteCarloSearch:
             node = node.parent
 
     def playout_policy(self, state: game):
-        # legal_moves = list(state.generate_legal_moves())
-        # return choice(legal_moves)
         return state.generate_random_move()
 
-    def playout(self, node: MctsNode):
-        plies = 0
-        state = copy.deepcopy(node.game)
+    # function for node traversal
+    def traverse(self, node):
+        while (True):
+            try:
+                node = node.children[self.counter]
+                self.counter += 1
+                break
+            except IndexError:
+                self.counter = 0
+        return node
+
+    def utility(self, state: Game):
         score = state.get_score()
-        while (plies < self.max_plies and not utils.game_is_over(score)):
-            move = self.playout_policy(state)
-            state.move(*move)
-            state.switch_player()
-            score = state.get_score()
-            plies += 1
         if score[0] > score[1]:
             return (1, 0)
         elif score[0] < score[1]:
             return (0, 1)
         else:
             return (0, 0)
+
+    def playout(self, node: MctsNode):
+        plies = 0
+        state = copy.deepcopy(node.game)
+        while (plies < self.max_plies and not utils.game_is_over(state.get_score())):
+            move = self.playout_policy(state)
+            state.move(*move)
+            state.switch_player()
+            plies += 1
+        return self.utility(state)
 
 
 class MonteCarloPlayer(AbstractPlayer):
