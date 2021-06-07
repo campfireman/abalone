@@ -21,7 +21,7 @@ from . import utils
 
 
 class AlphaBetaBase:
-    def __init__(self, game: Game, perspective: Player, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None):
+    def __init__(self, game: Game, perspective: Player, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -31,6 +31,9 @@ class AlphaBetaBase:
         self.direction = direction
         self.player = perspective
         self.not_player = Player.BLACK.value if perspective == Player.WHITE.value else Player.WHITE.value
+        self.func = func
+        if func:
+            func()
 
     def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
@@ -54,7 +57,7 @@ class AlphaBetaBase:
             child.switch_player()
             evaluation = self._evaluate_move(child, move[0], move[1])
             result.append((child, move[0], move[1], evaluation))
-        result = self._order_children(result)[:30]
+        result = self._order_children(result)
         return result
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
@@ -64,7 +67,7 @@ class AlphaBetaBase:
             value = (float('-inf'), None, None)
             for child in self._create_children():
                 value = max(value, self.__class__(
-                    child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2]).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2], func=self.func).run(), key=itemgetter(0))
                 self.alpha = max(self.alpha, value[0])
                 if self.alpha >= self.beta:
                     break
@@ -72,7 +75,7 @@ class AlphaBetaBase:
             value = (float('inf'), None, None)
             for child in self._create_children():
                 value = min(value, self.__class__(
-                    child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2]).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2], func=self.func).run(), key=itemgetter(0))
                 self.beta = min(self.beta, value[0])
                 if self.beta <= self.alpha:
                     break
@@ -188,9 +191,13 @@ class AlphaBetaPlayer(AbstractPlayer):
         return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        global nodes
         result = AlphaBetaSimple(
-            game, game.turn.value).run()
+            game, game.turn.value, func=count_nodes).run()
         print(result[0])
+        print(f'nodes investigated: {nodes}')
+        nodes = count()
+
         return [result[1], result[2]]
 
 
