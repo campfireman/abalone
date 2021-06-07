@@ -36,8 +36,6 @@ from abalone.game import Game, IllegalMoveException
 from abalone.utils import line_from_to
 from src import utils
 
-DATA_DIR = './data'
-
 
 def _format_move(turn: Player, move: Tuple[Union[Space, Tuple[Space, Space]], Direction], moves: int) -> str:
     """Formats a player's move as a string with a single line.
@@ -56,16 +54,6 @@ def _format_move(turn: Player, move: Tuple[Union[Space, Tuple[Space, Space]], Di
 def _merge_dict(dict1, dict2):
     for key in dict2.keys():
         dict1[key] += dict2[key]
-
-
-def _write_to_file(obj, filename):
-    with open(os.path.join(DATA_DIR, filename), 'wb') as file:
-        pickle.dump(obj, file)
-
-
-def _open_from_file(filename) -> dict:
-    with open(os.path.join(DATA_DIR, filename), 'rb') as file:
-        return pickle.load(file)
 
 
 @dataclass
@@ -88,7 +76,7 @@ class GameStats:
     _dir = 'games'
 
     def save(self):
-        _write_to_file(asdict(self), os.path.join(
+        utils.write_to_file(asdict(self), os.path.join(
             self._dir, f'{time.time()}.pickle'))
 
 
