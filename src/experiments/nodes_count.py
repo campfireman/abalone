@@ -51,6 +51,22 @@ def main():
                 'func': count_nodes,
             },
         },
+        {
+            'class': players.AlphaBetaSimple,
+            'args': (game, game.turn),
+            'kwargs': {
+                'depth': 2,
+                'func': count_nodes,
+            },
+        },
+        # {
+        #     'class': players.AlphaBetaSimple,
+        #     'args': (game, game.turn),
+        #     'kwargs': {
+        #         'depth': 3,
+        #         'func': count_nodes,
+        #     },
+        # },
         # {
         #     'class': players.AlphaBetaSimple,
         #     'args': (game, game.turn),

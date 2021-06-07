@@ -35,6 +35,9 @@ class AlphaBetaBase:
         if func:
             func()
 
+    def __str__(self):
+        return f'{self.__class__.__name__} depth = {self.depth}'
+
     def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
 
@@ -191,12 +194,9 @@ class AlphaBetaPlayer(AbstractPlayer):
         return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        global nodes
         result = AlphaBetaSimple(
-            game, game.turn.value, func=count_nodes).run()
+            game, game.turn.value).run()
         print(result[0])
-        print(f'nodes investigated: {nodes}')
-        nodes = count()
 
         return [result[1], result[2]]
 
