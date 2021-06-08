@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import inspect
 import random
 import time
 from collections import defaultdict
@@ -36,7 +38,9 @@ class AlphaBetaBase:
             func()
 
     def __str__(self):
-        return f'{self.__class__.__name__} depth = {self.depth}'
+        hashstr = hashlib.md5(inspect.getsource(
+            self.__class__).encode()).hexdigest()
+        return f'{self.__class__.__name__} depth = {self.depth} ({hashstr})'
 
     def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
@@ -61,6 +65,10 @@ class AlphaBetaBase:
             evaluation = self._evaluate_move(child, move[0], move[1])
             result.append((child, move[0], move[1], evaluation))
         result = self._order_children(result)
+        # print(self.game)
+        # print('---')
+        # print(result)
+        # print('---')
         return result
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
@@ -105,6 +113,7 @@ class AlphaBetaSimple(AlphaBetaBase):
         lost = new_score[self_selector] - old_score[self_selector]
 
         multiple = 0
+        attacking = 0
         if isinstance(marbles, tuple):
             c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
             c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
@@ -114,11 +123,17 @@ class AlphaBetaSimple(AlphaBetaBase):
             own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
                 line)
             multiple = own_marbles_num - 1
+            if opp_marbles_num > 0:
+                attacking += 1
+        if self.game.turn.value == self.not_player:
+            multiple = -multiple
+            attacking = - attacking
 
         # weights for the linear combination
         w_0 = 1
         w_1 = 3
-        return w_0 * multiple + w_1 * captured + w_1 * lost
+        w_2 = 2
+        return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
 
     def _count_heuristics(self, game: Game) -> dict:
         result = {}
@@ -171,7 +186,7 @@ class AlphaBetaSimple(AlphaBetaBase):
         marble_ratio = (counter / denominator)
 
         w_0 = 1
-        w_1 = -1
+        w_1 = -1.5
         w_2 = 10000
         heuristic = w_0 * adjacency + w_1 * distance + w_2 * marble_ratio
         return heuristic
@@ -182,6 +197,11 @@ class AlphaBetaSimpleUnordered(AlphaBetaSimple):
         return children
 
 
+class AlphaBetaSimpleFast(AlphaBetaSimple):
+    def _order_children(self, children):
+        return super()._order_children(children)[:30]
+
+
 class AlphaBetaPlayer(AbstractPlayer):
     '''
     '''
@@ -189,12 +209,12 @@ class AlphaBetaPlayer(AbstractPlayer):
     def __str__(self):
         return f'AlphaBetaPlayer_{self.version}'
 
-    @property
+    @ property
     def version(self) -> str:
         return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = AlphaBetaSimple(
+        result = AlphaBetaSimpleFast(
             game, game.turn.value).run()
         print(result[0])
 
@@ -209,28 +229,30 @@ class MctsNode:
         self.direction = direction
         self.black_stats = 0
         self.white_stats = 0
+        self.no_games = 0
         self.children = []
 
-    @property
+    @ property
     def stats(self) -> (int, int):
-        return (self.black_stats, self.white_stats)
+        return (self.black_stats / self.no_games, self.white_stats / self.no_games)
 
     def append_child(self, child: MctsNode):
         self.children.append(child)
 
     def update_stats(self, new: Tuple[int, int]):
+        self.no_games += 1
         self.black_stats += new[0]
         self.white_stats += new[1]
 
 
 class MonteCarloSearch:
-    def __init__(self, game: Game, max_time=7, playouts=2, max_plies=200):
+    def __init__(self, game: Game, max_time=20, playouts=2, max_plies=200):
         self.game = game
         self.max_time = max_time
         self.playouts = playouts
         self.max_plies = max_plies
-        self.player = self.game.turn.value
-        self.not_player = self.game.not_in_turn_player().value
+        self.player = 0 if self.game.turn == Player.BLACK else 1
+        self.not_player = 1 if self.player == Player.BLACK else 0
         self.counter = 0
 
     def run(self) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
@@ -254,7 +276,7 @@ class MonteCarloSearch:
             self.backpropagate(leaf, simulation_result)
             child_count += 1
             sim_count += 1
-            # print(f'child_count: {self.counter} sim_count: {sim_count}')
+        print(f'child_count: {self.counter} sim_count: {sim_count}')
         return self.choose_best(root)
 
     def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
@@ -265,11 +287,12 @@ class MonteCarloSearch:
             else:
                 if best.stats[self.player] < child.stats[self.player]:
                     best = child
+        print(best.stats)
         return (best.marbles, best.direction)
 
     def backpropagate(self, node: MctsNode, result: Tuple[int, int]):
-        while (node.parent != None):
-            node.parent.update_stats(result)
+        while (node != None):
+            node.update_stats(result)
             node = node.parent
 
     def playout_policy(self, state: game):
@@ -288,6 +311,7 @@ class MonteCarloSearch:
 
     def utility(self, state: Game):
         score = state.get_score()
+        # return ((14 - score[1]) / 6, (14 - score[0]) / 6)
         if score[0] > score[1]:
             return (1, 0)
         elif score[0] < score[1]:
@@ -303,6 +327,8 @@ class MonteCarloSearch:
             state.move(*move)
             state.switch_player()
             plies += 1
+        # print(state)
+        # print(state.get_score())
         return self.utility(state)
 
 

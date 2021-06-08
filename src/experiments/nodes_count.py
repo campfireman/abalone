@@ -43,22 +43,22 @@ def main():
     global nodes
     game = Game()
     algorithms = [
-        {
-            'class': players.AlphaBetaSimple,
-            'args': (game, game.turn),
-            'kwargs': {
-                'depth': 1,
-                'func': count_nodes,
-            },
-        },
-        {
-            'class': players.AlphaBetaSimple,
-            'args': (game, game.turn),
-            'kwargs': {
-                'depth': 2,
-                'func': count_nodes,
-            },
-        },
+        # {
+        #     'class': players.AlphaBetaSimple,
+        #     'args': (game, game.turn),
+        #     'kwargs': {
+        #         'depth': 1,
+        #         'func': count_nodes,
+        #     },
+        # },
+        # {
+        #     'class': players.AlphaBetaSimple,
+        #     'args': (game, game.turn),
+        #     'kwargs': {
+        #         'depth': 2,
+        #         'func': count_nodes,
+        #     },
+        # },
         # {
         #     'class': players.AlphaBetaSimple,
         #     'args': (game, game.turn),
@@ -67,6 +67,22 @@ def main():
         #         'func': count_nodes,
         #     },
         # },
+        {
+            'class': players.AlphaBetaSimple,
+            'args': (game, game.turn),
+            'kwargs': {
+                'depth': 4,
+                'func': count_nodes,
+            },
+        },
+        {
+            'class': players.AlphaBetaSimpleFast,
+            'args': (game, game.turn),
+            'kwargs': {
+                'depth': 4,
+                'func': count_nodes,
+            },
+        },
         # {
         #     'class': players.AlphaBetaSimple,
         #     'args': (game, game.turn),

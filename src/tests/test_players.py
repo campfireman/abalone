@@ -52,6 +52,24 @@ def test_heuristic():
             'expected_distance_black': 6,
             'expected_distance_white': 0,
         },
+        {
+            'value': [
+                [Marble.BLANK] * 5,
+                [Marble.BLANK] * 6,
+                [Marble.BLANK] * 7,
+                [Marble.BLANK] * 8,
+                [Marble.BLANK] * 9,
+                [Marble.BLANK] * 3 + [Marble.BLACK] * 2 + [Marble.BLANK] * 3,
+                [Marble.BLANK] * 2 + [Marble.BLACK] * 3 + [Marble.BLANK] * 2,
+                [Marble.BLANK] * 2 + [Marble.BLACK] * 2 + [Marble.BLANK] * 2,
+                [Marble.BLANK] * 5,
+            ],
+            'in_turn': Player.BLACK,
+            'expected_adjacency_black': 24,
+            'expected_adjacency_white': 0,
+            'expected_distance_black': 14,
+            'expected_distance_white': 0,
+        },
     ]
 
     game = Game()
@@ -61,6 +79,8 @@ def test_heuristic():
         game.turn = board['in_turn']
         algorithm = players.AlphaBetaSimple(game, game.turn.value)
         counts = algorithm._count_heuristics(game)
+        print(game)
+        print(algorithm._heuristic(game))
         assert counts['sum_adjacency'][Player.BLACK.value] == board['expected_adjacency_black']
         assert counts['sum_adjacency'][Player.WHITE.value] == board['expected_adjacency_white']
         assert counts['sum_distance'][Player.BLACK.value] == board['expected_distance_black']
