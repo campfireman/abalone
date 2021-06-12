@@ -1,11 +1,13 @@
 import json
 import os
 import pickle
+import random
 import time
 from dataclasses import asdict, dataclass
+from pprint import pprint
 from typing import Tuple, Union
 
-from abalone.enums import Player
+from abalone.enums import Direction, Player, Space
 
 DATA_DIR = './data'
 
@@ -50,3 +52,46 @@ class Stats:
         os.makedirs(path, exist_ok=True)
         write_to_file_json(asdict(self), os.path.join(
             self._dir, f'{time.time()}.json'))
+
+
+class TransitionTable:
+    def __init__(self):
+        self.zobrist = [[[0 for y in range(0, 9)]
+                         for x in range(0, 9)] for p in range(0, 2)]
+        self.table = {}
+        self.initialize_keys()
+
+    def initialize_keys(self):
+        '''
+        Generate Zobrist hash keys
+        '''
+        for p in range(0, 2):
+            for x in range(0, 9):
+                for y in range(0, 9):
+                    self.zobrist[p][x][y] = random.getrandbits(64) - 2**63
+
+    def get_key(self, marbles: dict):
+        '''
+        Get the state at the key
+        '''
+        key = 0
+        for player in marbles.keys():
+            p = 0 if player == Player.BLACK.value else 1
+            for x in marbles[player].keys():
+                for y in marbles[player][x].keys():
+                    key ^= self.zobrist[p][x][y]
+        return key
+
+    def get_value(self, key: int,  marbles: dict, depth: int) -> Tuple[Tuple[Union[Space, Tuple[Space, Space]], Direction], str, float]:
+        if key in self.table and self.table[key]['depth'] >= depth:
+            # if self.table[key]['board'] != marbles:
+            # pprint(self.table[key]['board'])
+            # pprint(marbles)
+            # print("CHICO")
+            # print('COLLISION')
+            tt_entry = self.table[key]
+            return tt_entry['flag'], tt_entry['value']
+        return None
+
+    def set_value(self, key: int, value: dict):
+        self.table[key] = value

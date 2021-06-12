@@ -1,8 +1,10 @@
 import time
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
-from abalone.game import Game
+from abalone.enums import InitialPosition
+from abalone.game import Game, Marble
 
 from .. import players, utils
 
@@ -39,92 +41,116 @@ def reset_count():
     nodes = 0
 
 
+class Position(Enum):
+    MID_GAME = [
+        [Marble.WHITE] * 5,
+        [Marble.WHITE] * 5 + [Marble.BLANK],
+        [Marble.BLANK] * 3 + [Marble.WHITE] +
+        [Marble.BLANK] + [Marble.WHITE] * 2,
+        [Marble.BLANK] * 4 + [Marble.BLACK] +
+        [Marble.WHITE] + [Marble.BLANK] * 2,
+        [Marble.BLANK] * 4 + [Marble.BLACK] * 2 + [Marble.BLANK] * 3,
+        [Marble.BLANK] * 3 + [Marble.BLACK] * 4 + [Marble.BLANK],
+        [Marble.BLANK] * 1 + [Marble.BLACK] * 4 + [Marble.BLANK] * 2,
+        [Marble.BLANK] * 1 + [Marble.BLACK] +
+        [Marble.BLANK] + [Marble.BLACK] * 2 + [Marble.BLANK],
+        [Marble.BLANK] * 5
+    ]
+
+
+POSITIONS = [
+    InitialPosition.DEFAULT,
+    # Position.MID_GAME,
+]
+
+
 def main():
     global nodes
-    game = Game()
-    algorithms = [
-        # {
-        #     'class': players.AlphaBetaSimple,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 1,
-        #         'func': count_nodes,
-        #     },
-        # },
-        # {
-        #     'class': players.AlphaBetaSimple,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 2,
-        #         'func': count_nodes,
-        #     },
-        # },
-        # {
-        #     'class': players.AlphaBetaSimple,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 3,
-        #         'func': count_nodes,
-        #     },
-        # },
-        {
-            'class': players.AlphaBetaSimple,
-            'args': (game, game.turn),
-            'kwargs': {
-                'depth': 4,
-                'func': count_nodes,
-            },
-        },
-        {
-            'class': players.AlphaBetaSimpleFast,
-            'args': (game, game.turn),
-            'kwargs': {
-                'depth': 4,
-                'func': count_nodes,
-            },
-        },
-        # {
-        #     'class': players.AlphaBetaSimple,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 4,
-        #         'func': count_nodes,
-        #     },
-        # },
-        # {
-        #     'class': players.AlphaBetaSimpleUnordered,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 3,
-        #         'func': count_nodes,
-        #     },
-        # },
-        # {
-        #     'class': players.AlphaBetaSimpleUnordered,
-        #     'args': (game, game.turn),
-        #     'kwargs': {
-        #         'depth': 4,
-        #         'func': count_nodes,
-        #     },
-        # },
-    ]
     results = []
-    for algo in algorithms:
-        algo = algo['class'](*algo['args'], **algo['kwargs'])
-        name = str(algo)
-        print(f'[ ] Running {name}...')
-        start = time.time()
-        move = algo.run()
-        end = time.time()
-        total_time = end-start
-        result = NodeCount(
-            algorithm=name,
-            time=total_time,
-            nodes_visited=nodes,
-        )
-        results.append(result)
-        reset_count()
-        print(f'[x] Result: {result}')
+    for position in POSITIONS:
+        game = Game(initial_position=position)
+        algorithms = [
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 1,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 2,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 3,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
+            {
+                'class': players.AlphaBetaAdvanced,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 4,
+                    'func': count_nodes,
+                },
+            },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 3,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
+        ]
+        for algo in algorithms:
+            algo = algo['class'](*algo['args'], **algo['kwargs'])
+            name = str(algo)
+            print(f'[ ] Running {name}...')
+            start = time.time()
+            move = algo.run()
+            end = time.time()
+            total_time = end-start
+            result = NodeCount(
+                algorithm=name,
+                time=total_time,
+                nodes_visited=nodes,
+            )
+            results.append(result)
+            reset_count()
+            print(f'[x] Result: {result}')
 
     print('[ ] Saving...')
     Counts(node_counts=results).save()

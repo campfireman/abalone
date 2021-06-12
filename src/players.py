@@ -5,9 +5,11 @@ from __future__ import annotations
 import copy
 import hashlib
 import inspect
+import math
 import random
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from math import floor
 from operator import itemgetter
 from random import choice
@@ -21,8 +23,59 @@ from abalone.utils import line_to_edge, space_to_board_indices
 
 from . import utils
 
+nodes = 0
+tt = utils.TransitionTable()
 
-class AlphaBetaBase:
+
+class Algorithm:
+    def __str__(self):
+        hashstr = hashlib.md5(inspect.getsource(
+            self.__class__).encode()).hexdigest()
+        return f'{self.__class__.__name__} depth = {self.depth} ({hashstr})'
+
+    def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
+        raise NotImplementedError
+
+    # def evaluate_move(player: Player, current: Game, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+    #     old_score = current.get_score()
+    #     new_score = result.get_score()
+    #     not_player = Player.WHITE.value if player == Player.BLACK.value else Player.BLACK.value
+    #     if utils.game_is_over(new_score):
+    #         w_0 = 10000
+    #         winner = utils.get_winner(new_score)
+    #         # return as winning or losing move
+    #         return w_0 * 1 if winner.value == player else w_0 * -1
+    #     enemy_selector = 1 if player == Player.BLACK.value else 0
+    #     self_selector = 0 if player == Player.BLACK.value else 1
+
+    #     captured = old_score[enemy_selector] - new_score[enemy_selector]
+    #     lost = new_score[self_selector] - old_score[self_selector]
+
+    #     multiple = 0
+    #     attacking = 0
+    #     if isinstance(marbles, tuple):
+    #         c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
+    #         c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
+    #         multiple = c1.distance(c2)
+    #     else:
+    #         line = line_to_edge(marbles, direction)
+    #         own_marbles_num, opp_marbles_num = current._inline_marbles_nums(
+    #             line)
+    #         multiple = own_marbles_num - 1
+    #         if opp_marbles_num > 0:
+    #             attacking += 1
+    #     if current.turn.value == not_player:
+    #         multiple = -multiple
+    #         attacking = - attacking
+
+    #     # weights for the linear combination
+    #     w_0 = 1
+    #     w_1 = 3
+    #     w_2 = 2
+    #     return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
+
+
+class AlphaBetaBase(Algorithm):
     def __init__(self, game: Game, perspective: Player, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None):
         self.game = game
         self.depth = depth
@@ -36,11 +89,6 @@ class AlphaBetaBase:
         self.func = func
         if func:
             func()
-
-    def __str__(self):
-        hashstr = hashlib.md5(inspect.getsource(
-            self.__class__).encode()).hexdigest()
-        return f'{self.__class__.__name__} depth = {self.depth} ({hashstr})'
 
     def _heuristic(self, game: Game) -> float:
         raise NotImplementedError
@@ -71,7 +119,17 @@ class AlphaBetaBase:
         # print('---')
         return result
 
+    def pre_hook(self):
+        pass
+
+    def post_hook(self, value):
+        pass
+
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
+        pre = self.pre_hook()
+        if pre != None:
+            return pre
+
         if self.depth == 0 or utils.game_is_over(self.game.get_score()):
             return self._end((self._heuristic(self.game), None, None))
         if self.is_maximizer:
@@ -90,6 +148,8 @@ class AlphaBetaBase:
                 self.beta = min(self.beta, value[0])
                 if self.beta <= self.alpha:
                     break
+
+        self.post_hook(value)
         return self._end(value)
 
 
@@ -165,8 +225,6 @@ class AlphaBetaSimple(AlphaBetaBase):
 
     def _heuristic(self, game: Game) -> float:
         '''
-        TODO:
-            - visualize game metrics
         '''
         score = game.get_score()
         if utils.game_is_over(score):
@@ -183,13 +241,39 @@ class AlphaBetaSimple(AlphaBetaBase):
 
         counter = score[0] if self.player == Player.BLACK.value else score[1]
         denominator = score[1] if self.player == Player.BLACK.value else score[0]
-        marble_ratio = (counter / denominator)
+        marble_ratio = counter - denominator
 
         w_0 = 1
         w_1 = -1.5
-        w_2 = 10000
+        w_2 = 100
         heuristic = w_0 * adjacency + w_1 * distance + w_2 * marble_ratio
         return heuristic
+
+
+class AlphaBetaAdvanced(AlphaBetaSimple):
+    def pre_hook(self):
+        self.key = tt.get_key(self.game.marbles)
+        result = tt.get_value(self.key, self.game.marbles, self.depth)
+        if result is not None:
+            flag, value = result[0], result[1]
+            if flag == 'lower':
+                return self._end((max(self.alpha, value[0]), value[1], value[2]))
+            elif flag == 'upper':
+                return self._end((min(self.beta, value[0]), value[1], value[2]))
+        return None
+
+    def post_hook(self, value):
+        tt_entry = {'value': None, 'flag': None, 'depth': None}
+        tt_entry['value'] = value
+        if value[0] <= self.alpha:
+            tt_entry['flag'] = 'upper'
+        elif value[0] >= self.beta:
+            tt_entry['flag'] = 'lower'
+
+        tt_entry['depth'] = self.depth
+        tt_entry['board'] = self.game.marbles.copy()
+
+        tt.set_value(self.key, tt_entry)
 
 
 class AlphaBetaSimpleUnordered(AlphaBetaSimple):
@@ -197,7 +281,7 @@ class AlphaBetaSimpleUnordered(AlphaBetaSimple):
         return children
 
 
-class AlphaBetaSimpleFast(AlphaBetaSimple):
+class AlphaBetaSimpleFast(AlphaBetaAdvanced):
     def _order_children(self, children):
         return super()._order_children(children)[:30]
 
@@ -214,11 +298,25 @@ class AlphaBetaPlayer(AbstractPlayer):
         return '1'
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        global nodes
+        nodes = 0
+
+        def count_nodes():
+            global nodes
+            nodes += 1
         result = AlphaBetaSimpleFast(
-            game, game.turn.value).run()
-        print(result[0])
+            game, game.turn.value, func=count_nodes, depth=4).run()
+        print(f'Heuristic: {result[0]}')
+        print(f'Nodes visited: {nodes}')
 
         return [result[1], result[2]]
+
+
+@dataclass
+class Move:
+    move: Tuple[Union[Space, Tuple[Space, Space]], Direction]
+    value: int
+    next_state: Game
 
 
 class MctsNode:
@@ -230,11 +328,37 @@ class MctsNode:
         self.black_stats = 0
         self.white_stats = 0
         self.no_games = 0
+        self.moves = self.create_ordered_moves()
         self.children = []
+        self.uct = float('inf')
 
-    @ property
+    @property
     def stats(self) -> (int, int):
-        return (self.black_stats / self.no_games, self.white_stats / self.no_games)
+        return (self.black_stats / self.no_games if self.no_games != 0 else 0, self.white_stats / self.no_games if self.no_games != 0 else 0)
+
+    def create_ordered_moves(self) -> List[Move]:
+        moves = []
+        for move in self.game.generate_legal_moves():
+            next_state = copy.deepcopy(self.game)
+            next_state.move(*move)
+            next_state.switch_player()
+            value = evaluate_move(Player.BLACK.value,
+                                  self.game, next_state, *move)
+            moves.append(Move(
+                move=move,
+                value=value,
+                next_state=next_state,
+            ))
+        reverse = False if self.game.turn == Player.BLACK else True
+        moves.sort(key=lambda x: x.value, reverse=reverse)
+        return moves
+
+    def update_uct(self):
+        mean = self.black_stats / self.no_games
+        no_games_parent = math.log(
+            self.parent.no_games + 1) if self.parent else 0
+        C = math.sqrt(2)
+        self.uct = mean + C * math.sqrt(no_games_parent / self.no_games)
 
     def append_child(self, child: MctsNode):
         self.children.append(child)
@@ -243,41 +367,48 @@ class MctsNode:
         self.no_games += 1
         self.black_stats += new[0]
         self.white_stats += new[1]
+        self.update_uct()
+
+    def print(self, level=0):
+        print(f'level: {level} score: {self.stats}')
+        for child in self.children:
+            child.print(level+1)
 
 
-class MonteCarloSearch:
-    def __init__(self, game: Game, max_time=20, playouts=2, max_plies=200):
+class MonteCarloSearch(Algorithm):
+    def __init__(self, game: Game, max_time=5, max_plies=200):
         self.game = game
         self.max_time = max_time
-        self.playouts = playouts
         self.max_plies = max_plies
         self.player = 0 if self.game.turn == Player.BLACK else 1
         self.not_player = 1 if self.player == Player.BLACK else 0
         self.counter = 0
+        self.root = MctsNode(self.game, None)
+
+    def initialize(self):
+        for move in self.root.moves:
+            child = MctsNode(move.next_state, self.root, *move.move)
+            self.root.append_child(child)
+            self.root.moves.pop()
 
     def run(self) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        root = MctsNode(self.game, None)
         child_count = 0
         sim_count = 0
         start_time = time.time()
 
         # inititalize tree
-        for move in self.game.generate_legal_moves():
-            next_state = copy.deepcopy(self.game)
-            next_state.move(*move)
-            next_state.switch_player()
-            child = MctsNode(next_state, root, *move)
-            root.append_child(child)
+        self.initialize()
 
         # exhaust time resources
         while time.time() - start_time < self.max_time:
-            leaf = self.traverse(root)
+            leaf = self.traverse(self.root)
             simulation_result = self.playout(leaf)
             self.backpropagate(leaf, simulation_result)
             child_count += 1
             sim_count += 1
         print(f'child_count: {self.counter} sim_count: {sim_count}')
-        return self.choose_best(root)
+        self.root.print()
+        return self.choose_best(self.root)
 
     def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
         best = None
@@ -287,7 +418,6 @@ class MonteCarloSearch:
             else:
                 if best.stats[self.player] < child.stats[self.player]:
                     best = child
-        print(best.stats)
         return (best.marbles, best.direction)
 
     def backpropagate(self, node: MctsNode, result: Tuple[int, int]):
@@ -312,12 +442,13 @@ class MonteCarloSearch:
     def utility(self, state: Game):
         score = state.get_score()
         # return ((14 - score[1]) / 6, (14 - score[0]) / 6)
-        if score[0] > score[1]:
-            return (1, 0)
-        elif score[0] < score[1]:
-            return (0, 1)
-        else:
-            return (0, 0)
+        return ()
+        # if score[0] > score[1]:
+        #     return (1, 0)
+        # elif score[0] < score[1]:
+        #     return (0, 1)
+        # else:
+        #     return (0, 0)
 
     def playout(self, node: MctsNode):
         plies = 0
@@ -332,7 +463,46 @@ class MonteCarloSearch:
         return self.utility(state)
 
 
+class MonteCarloImproved(MonteCarloSearch):
+    def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
+        best = None
+        for child in root.children:
+            if best is None:
+                best = child
+            else:
+                if best.no_games < child.no_games:
+                    best = child
+        return (best.marbles, best.direction)
+
+    def best_uct(self, children):
+        best = None
+        for child in children:
+            if best is None or child.uct > best.uct:
+                best = child
+        # print(best.uct)
+        return best
+
+    def initialize(self):
+        self.expand(self.root, breadth=20)
+
+    def expand(self, node, breadth=1):
+        # move = node.game.generate_random_move()
+        # state = copy.deepcopy(node.game)
+        # state.move(*move)
+        # state.switch_player()
+        for _ in range(breadth):
+            move = node.moves.pop()
+            new_node = MctsNode(move.next_state, node, *move.move)
+            node.append_child(new_node)
+        return new_node
+
+    def traverse(self, node):
+        while (node.children):
+            node = self.best_uct(node.children)
+        return self.expand(node) if node.no_games > 3 else node
+
+
 class MonteCarloPlayer(AbstractPlayer):
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = MonteCarloSearch(game).run()
+        result = MonteCarloImproved(game, max_time=15).run()
         return result
