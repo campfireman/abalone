@@ -77,6 +77,7 @@ def test_heuristic():
     for board in boards:
         game.board = board['value']
         game.turn = board['in_turn']
+        game.marbles = game.init_marbles()
         algorithm = players.AlphaBetaSimple(game, game.turn.value)
         counts = algorithm._count_heuristics(game)
         print(game)

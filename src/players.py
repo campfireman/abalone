@@ -24,7 +24,7 @@ from abalone.utils import line_to_edge, space_to_board_indices
 from . import utils
 
 nodes = 0
-tt = utils.TransitionTable()
+storage = utils.Storage()
 
 
 class Algorithm:
@@ -201,26 +201,25 @@ class AlphaBetaSimple(AlphaBetaBase):
         result['sum_distance'] = defaultdict(int)
         center = Cube.from_board_array(4, 4)
 
-        for y, row in enumerate(game.board):
-            for x, current_marble in enumerate(row):
-                if current_marble == Marble.BLANK:
-                    continue
-                c = Cube.from_board_array(y, x)
-                # adjacency
-                for neighbor in Cube.neighbor_indices():
-                    n = Cube(neighbor[0], neighbor[1], neighbor[2]).add(c)
-                    xn, yn = n.to_board_array()
-                    if yn < 0 or xn < 0:
-                        continue
-                    try:
-                        neighbor_marble = game.board[yn][xn]
-                        if neighbor_marble == current_marble:
-                            result['sum_adjacency'][current_marble.value] += 1
-                    except IndexError:
-                        continue
-                # distance
-                result['sum_distance'][current_marble.value] += c.distance(
-                    center)
+        for player in game.marbles.keys():
+            for x in game.marbles[player].keys():
+                for y, current_marble in game.marbles[player][x].items():
+                    c = Cube.from_board_array(x, y)
+                    # adjacency
+                    for neighbor in Cube.neighbor_indices():
+                        n = Cube(neighbor[0], neighbor[1], neighbor[2]).add(c)
+                        xn, yn = n.to_board_array()
+                        if yn < 0 or xn < 0:
+                            continue
+                        try:
+                            neighbor_marble = game.board[yn][xn]
+                            if neighbor_marble == current_marble:
+                                result['sum_adjacency'][current_marble.value] += 1
+                        except IndexError:
+                            continue
+                    # distance
+                    result['sum_distance'][current_marble.value] += c.distance(
+                        center)
         return result
 
     def _heuristic(self, game: Game) -> float:
@@ -247,13 +246,25 @@ class AlphaBetaSimple(AlphaBetaBase):
         w_1 = -1.5
         w_2 = 100
         heuristic = w_0 * adjacency + w_1 * distance + w_2 * marble_ratio
+        # heuristic = w_2 * marble_ratio
         return heuristic
 
 
 class AlphaBetaAdvanced(AlphaBetaSimple):
+    def __init__(self, game, perspective, depth=3, alpha=float('-inf'), beta=float('inf'), is_maximizer=True, marbles=None, direction=None, func=None):
+        super().__init__(game, perspective, depth=depth, alpha=alpha, beta=beta,
+                         is_maximizer=is_maximizer, marbles=marbles, direction=direction, func=func)
+        self.key = storage.get_key(self.game.marbles)
+
+    def _heuristic(self, game):
+        heuristic = storage.get_cache_value(self.key)
+        if heuristic is None:
+            heuristic = super()._heuristic(game)
+            storage.set_cache_value(self.key, heuristic)
+        return heuristic
+
     def pre_hook(self):
-        self.key = tt.get_key(self.game.marbles)
-        result = tt.get_value(self.key, self.game.marbles, self.depth)
+        result = storage.get_tt_value(self.key, self.game.marbles, self.depth)
         if result is not None:
             flag, value = result[0], result[1]
             if flag == 'lower':
@@ -273,7 +284,7 @@ class AlphaBetaAdvanced(AlphaBetaSimple):
         tt_entry['depth'] = self.depth
         tt_entry['board'] = self.game.marbles.copy()
 
-        tt.set_value(self.key, tt_entry)
+        storage.set_tt_value(self.key, tt_entry)
 
 
 class AlphaBetaSimpleUnordered(AlphaBetaSimple):
@@ -281,7 +292,7 @@ class AlphaBetaSimpleUnordered(AlphaBetaSimple):
         return children
 
 
-class AlphaBetaSimpleFast(AlphaBetaAdvanced):
+class AlphaBetaAdvancedFast(AlphaBetaAdvanced):
     def _order_children(self, children):
         return super()._order_children(children)[:30]
 
@@ -304,8 +315,8 @@ class AlphaBetaPlayer(AbstractPlayer):
         def count_nodes():
             global nodes
             nodes += 1
-        result = AlphaBetaSimpleFast(
-            game, game.turn.value, func=count_nodes, depth=4).run()
+        result = AlphaBetaAdvanced(
+            game, game.turn.value, func=count_nodes, depth=3).run()
         print(f'Heuristic: {result[0]}')
         print(f'Nodes visited: {nodes}')
 

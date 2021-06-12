@@ -54,11 +54,13 @@ class Stats:
             self._dir, f'{time.time()}.json'))
 
 
-class TransitionTable:
+class Storage:
     def __init__(self):
         self.zobrist = [[[0 for y in range(0, 9)]
                          for x in range(0, 9)] for p in range(0, 2)]
         self.table = {}
+        self.heuristic_cache = {}
+        self.children_cache = {}
         self.initialize_keys()
 
     def initialize_keys(self):
@@ -82,16 +84,23 @@ class TransitionTable:
                     key ^= self.zobrist[p][x][y]
         return key
 
-    def get_value(self, key: int,  marbles: dict, depth: int) -> Tuple[Tuple[Union[Space, Tuple[Space, Space]], Direction], str, float]:
+    def get_tt_value(self, key: int,  marbles: dict, depth: int) -> Tuple[Tuple[Union[Space, Tuple[Space, Space]], Direction], str, float]:
         if key in self.table and self.table[key]['depth'] >= depth:
-            # if self.table[key]['board'] != marbles:
-            # pprint(self.table[key]['board'])
-            # pprint(marbles)
-            # print("CHICO")
-            # print('COLLISION')
             tt_entry = self.table[key]
             return tt_entry['flag'], tt_entry['value']
         return None
 
-    def set_value(self, key: int, value: dict):
+    def set_tt_value(self, key: int, value: dict):
         self.table[key] = value
+
+    def get_cache_value(self, key: int):
+        return self.heuristic_cache.get(key, None)
+
+    def set_cache_value(self, key: int, value: float):
+        self.heuristic_cache[key] = value
+
+    def get_cached_children(self, key: int):
+        return self.children_cache.get(key, None)
+
+    def set_cached_children(self, key: int, value: list):
+        self.children_cache[key] = value

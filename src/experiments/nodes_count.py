@@ -70,8 +70,40 @@ def main():
     for position in POSITIONS:
         game = Game(initial_position=position)
         algorithms = [
+            {
+                'class': players.AlphaBetaSimple,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 1,
+                    'func': count_nodes,
+                },
+            },
+            {
+                'class': players.AlphaBetaSimple,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 2,
+                    'func': count_nodes,
+                },
+            },
+            {
+                'class': players.AlphaBetaSimple,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 3,
+                    'func': count_nodes,
+                },
+            },
+            {
+                'class': players.AlphaBetaSimple,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 4,
+                    'func': count_nodes,
+                },
+            },
             # {
-            #     'class': players.AlphaBetaSimple,
+            #     'class': players.AlphaBetaAdvanced,
             #     'args': (game, game.turn),
             #     'kwargs': {
             #         'depth': 1,
@@ -79,7 +111,7 @@ def main():
             #     },
             # },
             # {
-            #     'class': players.AlphaBetaSimple,
+            #     'class': players.AlphaBetaAdvanced,
             #     'args': (game, game.turn),
             #     'kwargs': {
             #         'depth': 2,
@@ -87,18 +119,10 @@ def main():
             #     },
             # },
             # {
-            #     'class': players.AlphaBetaSimple,
+            #     'class': players.AlphaBetaAdvanced,
             #     'args': (game, game.turn),
             #     'kwargs': {
             #         'depth': 3,
-            #         'func': count_nodes,
-            #     },
-            # },
-            # {
-            #     'class': players.AlphaBetaSimple,
-            #     'args': (game, game.turn),
-            #     'kwargs': {
-            #         'depth': 4,
             #         'func': count_nodes,
             #     },
             # },
@@ -110,14 +134,6 @@ def main():
                     'func': count_nodes,
                 },
             },
-            # {
-            #     'class': players.AlphaBetaSimple,
-            #     'args': (game, game.turn),
-            #     'kwargs': {
-            #         'depth': 4,
-            #         'func': count_nodes,
-            #     },
-            # },
             # {
             #     'class': players.AlphaBetaSimpleUnordered,
             #     'args': (game, game.turn),
