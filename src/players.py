@@ -27,6 +27,47 @@ nodes = 0
 storage = utils.Storage()
 
 
+class Heuristics:
+    @classmethod
+    def evaluate_move(cls, player: Player, current: Game, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+        old_score = current.get_score()
+        new_score = result.get_score()
+        not_player = Player.WHITE.value if player == Player.BLACK.value else Player.BLACK.value
+        if utils.game_is_over(new_score):
+            w_0 = 10000
+            winner = utils.get_winner(new_score)
+            # return as winning or losing move
+            return w_0 * 1 if winner.value == player else w_0 * -1
+        enemy_selector = 1 if player == Player.BLACK.value else 0
+        self_selector = 0 if player == Player.BLACK.value else 1
+
+        captured = old_score[enemy_selector] - new_score[enemy_selector]
+        lost = new_score[self_selector] - old_score[self_selector]
+
+        multiple = 0
+        attacking = 0
+        if isinstance(marbles, tuple):
+            c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
+            c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
+            multiple = c1.distance(c2)
+        else:
+            line = line_to_edge(marbles, direction)
+            own_marbles_num, opp_marbles_num = current._inline_marbles_nums(
+                line)
+            multiple = own_marbles_num - 1
+            if opp_marbles_num > 0:
+                attacking += 1
+        if current.turn.value == not_player:
+            multiple = -multiple
+            attacking = - attacking
+
+        # weights for the linear combination
+        w_0 = 1
+        w_1 = 3
+        w_2 = 2
+        return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
+
+
 class Algorithm:
     def __str__(self):
         hashstr = hashlib.md5(inspect.getsource(
@@ -35,44 +76,6 @@ class Algorithm:
 
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
         raise NotImplementedError
-
-    # def evaluate_move(player: Player, current: Game, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
-    #     old_score = current.get_score()
-    #     new_score = result.get_score()
-    #     not_player = Player.WHITE.value if player == Player.BLACK.value else Player.BLACK.value
-    #     if utils.game_is_over(new_score):
-    #         w_0 = 10000
-    #         winner = utils.get_winner(new_score)
-    #         # return as winning or losing move
-    #         return w_0 * 1 if winner.value == player else w_0 * -1
-    #     enemy_selector = 1 if player == Player.BLACK.value else 0
-    #     self_selector = 0 if player == Player.BLACK.value else 1
-
-    #     captured = old_score[enemy_selector] - new_score[enemy_selector]
-    #     lost = new_score[self_selector] - old_score[self_selector]
-
-    #     multiple = 0
-    #     attacking = 0
-    #     if isinstance(marbles, tuple):
-    #         c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
-    #         c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
-    #         multiple = c1.distance(c2)
-    #     else:
-    #         line = line_to_edge(marbles, direction)
-    #         own_marbles_num, opp_marbles_num = current._inline_marbles_nums(
-    #             line)
-    #         multiple = own_marbles_num - 1
-    #         if opp_marbles_num > 0:
-    #             attacking += 1
-    #     if current.turn.value == not_player:
-    #         multiple = -multiple
-    #         attacking = - attacking
-
-    #     # weights for the linear combination
-    #     w_0 = 1
-    #     w_1 = 3
-    #     w_2 = 2
-    #     return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
 
 
 class AlphaBetaBase(Algorithm):
@@ -159,41 +162,43 @@ class AlphaBetaSimple(AlphaBetaBase):
         return children
 
     def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
-        old_score = self.game.get_score()
-        new_score = result.get_score()
-        if utils.game_is_over(new_score):
-            w_0 = 10000
-            winner = utils.get_winner(new_score)
-            # return as winning or losing move
-            return w_0 * 1 if winner.value == self.player else w_0 * -1
-        enemy_selector = 1 if self.player == Player.BLACK.value else 0
-        self_selector = 0 if self.player == Player.BLACK.value else 1
+        return self._heuristic(result)
+    # def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+    #     old_score = self.game.get_score()
+    #     new_score = result.get_score()
+    #     if utils.game_is_over(new_score):
+    #         w_0 = 10000
+    #         winner = utils.get_winner(new_score)
+    #         # return as winning or losing move
+    #         return w_0 * 1 if winner.value == self.player else w_0 * -1
+    #     enemy_selector = 1 if self.player == Player.BLACK.value else 0
+    #     self_selector = 0 if self.player == Player.BLACK.value else 1
 
-        captured = old_score[enemy_selector] - new_score[enemy_selector]
-        lost = new_score[self_selector] - old_score[self_selector]
+    #     captured = old_score[enemy_selector] - new_score[enemy_selector]
+    #     lost = new_score[self_selector] - old_score[self_selector]
 
-        multiple = 0
-        attacking = 0
-        if isinstance(marbles, tuple):
-            c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
-            c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
-            multiple = c1.distance(c2)
-        else:
-            line = line_to_edge(marbles, direction)
-            own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
-                line)
-            multiple = own_marbles_num - 1
-            if opp_marbles_num > 0:
-                attacking += 1
-        if self.game.turn.value == self.not_player:
-            multiple = -multiple
-            attacking = - attacking
+    #     multiple = 0
+    #     attacking = 0
+    #     if isinstance(marbles, tuple):
+    #         c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
+    #         c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
+    #         multiple = c1.distance(c2)
+    #     else:
+    #         line = line_to_edge(marbles, direction)
+    #         own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
+    #             line)
+    #         multiple = own_marbles_num - 1
+    #         if opp_marbles_num > 0:
+    #             attacking += 1
+    #     if self.game.turn.value == self.not_player:
+    #         multiple = -multiple
+    #         attacking = - attacking
 
-        # weights for the linear combination
-        w_0 = 1
-        w_1 = 3
-        w_2 = 2
-        return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
+    #     # weights for the linear combination
+    #     w_0 = 1
+    #     w_1 = 3
+    #     w_2 = 2
+    #     return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
 
     def _count_heuristics(self, game: Game) -> dict:
         result = {}
@@ -256,12 +261,12 @@ class AlphaBetaAdvanced(AlphaBetaSimple):
                          is_maximizer=is_maximizer, marbles=marbles, direction=direction, func=func)
         self.key = storage.get_key(self.game.marbles)
 
-    def _heuristic(self, game):
-        heuristic = storage.get_cache_value(self.key)
-        if heuristic is None:
-            heuristic = super()._heuristic(game)
-            storage.set_cache_value(self.key, heuristic)
-        return heuristic
+    # def _heuristic(self, game):
+    #     heuristic = storage.get_cache_value(self.key)
+    #     if heuristic is None:
+    #         heuristic = super()._heuristic(game)
+    #         storage.set_cache_value(self.key, heuristic)
+    #     return heuristic
 
     def pre_hook(self):
         result = storage.get_tt_value(self.key, self.game.marbles, self.depth)
@@ -315,8 +320,8 @@ class AlphaBetaPlayer(AbstractPlayer):
         def count_nodes():
             global nodes
             nodes += 1
-        result = AlphaBetaAdvanced(
-            game, game.turn.value, func=count_nodes, depth=3).run()
+        result = AlphaBetaAdvancedFast(
+            game, game.turn.value, func=count_nodes, depth=4).run()
         print(f'Heuristic: {result[0]}')
         print(f'Nodes visited: {nodes}')
 
@@ -353,8 +358,8 @@ class MctsNode:
             next_state = copy.deepcopy(self.game)
             next_state.move(*move)
             next_state.switch_player()
-            value = evaluate_move(Player.BLACK.value,
-                                  self.game, next_state, *move)
+            value = Heuristics.evaluate_move(Player.BLACK.value,
+                                             self.game, next_state, *move)
             moves.append(Move(
                 move=move,
                 value=value,
@@ -381,7 +386,7 @@ class MctsNode:
         self.update_uct()
 
     def print(self, level=0):
-        print(f'level: {level} score: {self.stats}')
+        print(f'level: {level} score: {self.uct}')
         for child in self.children:
             child.print(level+1)
 
@@ -392,7 +397,7 @@ class MonteCarloSearch(Algorithm):
         self.max_time = max_time
         self.max_plies = max_plies
         self.player = 0 if self.game.turn == Player.BLACK else 1
-        self.not_player = 1 if self.player == Player.BLACK else 0
+        self.not_player = 1 if self.game.turn == Player.BLACK else 0
         self.counter = 0
         self.root = MctsNode(self.game, None)
 
@@ -451,15 +456,16 @@ class MonteCarloSearch(Algorithm):
         return node
 
     def utility(self, state: Game):
-        score = state.get_score()
-        # return ((14 - score[1]) / 6, (14 - score[0]) / 6)
-        return ()
-        # if score[0] > score[1]:
-        #     return (1, 0)
-        # elif score[0] < score[1]:
-        #     return (0, 1)
-        # else:
-        #     return (0, 0)
+        old_score = self.game.get_score()
+        new_score = state.get_score()
+        marbles_lost = old_score[self.player] - new_score[self.player]
+        marbles_won = old_score[self.not_player] - new_score[self.not_player]
+        if marbles_won > marbles_lost:
+            return (1, 0)
+        elif marbles_won < marbles_lost:
+            return (0, 1)
+        else:
+            return (0, 0)
 
     def playout(self, node: MctsNode):
         plies = 0
@@ -469,12 +475,10 @@ class MonteCarloSearch(Algorithm):
             state.move(*move)
             state.switch_player()
             plies += 1
-        # print(state)
-        # print(state.get_score())
         return self.utility(state)
 
 
-class MonteCarloImproved(MonteCarloSearch):
+class MonteCarloSearchImproved(MonteCarloSearch):
     def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
         best = None
         for child in root.children:
@@ -490,17 +494,12 @@ class MonteCarloImproved(MonteCarloSearch):
         for child in children:
             if best is None or child.uct > best.uct:
                 best = child
-        # print(best.uct)
         return best
 
     def initialize(self):
         self.expand(self.root, breadth=20)
 
     def expand(self, node, breadth=1):
-        # move = node.game.generate_random_move()
-        # state = copy.deepcopy(node.game)
-        # state.move(*move)
-        # state.switch_player()
         for _ in range(breadth):
             move = node.moves.pop()
             new_node = MctsNode(move.next_state, node, *move.move)
@@ -510,10 +509,10 @@ class MonteCarloImproved(MonteCarloSearch):
     def traverse(self, node):
         while (node.children):
             node = self.best_uct(node.children)
-        return self.expand(node) if node.no_games > 3 else node
+        return self.expand(node)
 
 
 class MonteCarloPlayer(AbstractPlayer):
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = MonteCarloImproved(game, max_time=15).run()
+        result = MonteCarloSearchImproved(game, max_time=15).run()
         return result
