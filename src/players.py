@@ -428,7 +428,7 @@ class MonteCarloSearch(Algorithm):
             self.backpropagate(leaf, simulation_result)
             child_count += 1
             sim_count += 1
-        # print(f'child_count: {self.counter} sim_count: {sim_count}')
+        print(f'child_count: {self.counter} sim_count: {sim_count}')
         # self.root.print()
         return self.choose_best(self.root)
 
@@ -519,7 +519,7 @@ class MonteCarloSearchImproved(MonteCarloSearch):
 
 
 class MonteCarloPlayer(AbstractPlayer):
-    def __init__(self, *args, max_time=10, verbose=True, **kwargs):
+    def __init__(self, *args, max_time=20, verbose=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.max_time = max_time
 
@@ -534,6 +534,6 @@ class MonteCarloPlayer(AbstractPlayer):
         return result
 
 
-class MonteCarloPlayerImproved(AbstractPlayer):
+class MonteCarloPlayerImproved(MonteCarloPlayer):
     def get_algorithm(self):
         return MonteCarloSearchImproved

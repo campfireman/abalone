@@ -47,24 +47,24 @@ MATCHES = [
     #     'args': ((), ()),
     #     'kwargs': ({'depth': 4, 'verbose': False}, {}),
     # },
-    {
-        'players': (players.AlphaBetaPlayer, players.AlphaBetaPlayer),
-        'iterations': 5,
-        'args': ((), ()),
-        'kwargs': ({'depth': 3, 'verbose': False}, {'depth': 3, 'verbose': False}),
-    },
     # {
     #     'players': (players.AlphaBetaPlayer, players.AlphaBetaPlayer),
     #     'iterations': 5,
     #     'args': ((), ()),
-    #     'kwargs': ({'depth': 2, 'verbose': False}, {'depth': 3, 'verbose': False}),
+    #     'kwargs': ({'depth': 3, 'verbose': False}, {'depth': 3, 'verbose': False}),
     # },
     # {
-    #     'players': (players.MonteCarloPlayer, RandomPlayer),
+    #     'players': (players.AlphaBetaPlayer, players.AlphaBetaPlayerFast),
     #     'iterations': 1,
     #     'args': ((), ()),
-    #     'kwargs': ({'max_time': 20}, {}),
+    #     'kwargs': ({'depth': 3, 'verbose': False}, {'depth': 3}),
     # },
+    {
+        'players': (players.MonteCarloPlayerImproved, players.AlphaBetaPlayerFast),
+        'iterations': 1,
+        'args': ((), ()),
+        'kwargs': ({'max_time': 20}, {'depth': 3, 'verbose': False}),
+    },
     # {
     #     'players': (players.MonteCarloPlayerImproved, RandomPlayer),
     #     'iterations': 1,

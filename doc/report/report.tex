@@ -21,6 +21,7 @@
 \usepackage{cite}
 \usepackage{float}
 \usepackage{subfig}
+\usepackage{changepage}
 
 % Grafiken einbinden
 \usepackage{graphicx}
@@ -65,8 +66,8 @@
 {\def\addcontentsline#1#2#3{}\maketitle} % Wird gebraucht, damit der Title nicht im Inhaltsverzeichnis steht
 
 \begin{abstract}
-  Perfect information games provide a good environment for artificial agents to navigate in, as they have a clear performance measure for comparison with each other and humans. Their determinism removes some of the engineering problems of agents in the physical world. In the following we implement and compare alpha-beta pruning, Monte Carlo Tree Search and Q-Learning for the game Abalone, to come to a conclusion about their resource-consumption and performance.
-  \keywords{AI \and Alpha-beta \and Q-Learning \and Abalone \and Intelligent Agents}
+  Perfect information games provide a good environment for artificial agents to navigate in, as they have a clear performance measure for comparison with each other and humans. Their determinism removes some of the engineering problems of agents in the physical world. In the following we implement and compare alpha-beta pruning and Monte Carlo Tree Search for the game Abalone, to come to a conclusion about their resource-consumption and performance.
+  \keywords{AI \and Alpha-beta \and Monte-Carlo-Tree-Search \and Abalone \and Intelligent Agents}
 \end{abstract}
 
 \section{Introduction}
@@ -201,7 +202,7 @@ Putting Abalone's complexity in relation with other popular games, its state spa
 
 
 \subsection{Heuristics}
-As the size of the game tree ist very large, the search on the tree usually does not reach terminal leaves that indicate a clear loss or win. Rather one has to evaluate the intermediary result of a given transposition based on a heuristic function. As algorithms like minimax optimize the potential outcome of the next moves based on this function, the heuristics solely determine the performance of such an agent.
+As the size of the game tree is very large, the search on the tree usually does not reach terminal leaves that indicate a clear loss or win. Rather one has to evaluate the intermediary result of a given transposition based on a heuristic function. As algorithms like minimax optimize the potential outcome of the next moves based on this function, the heuristics solely determine the performance of such an agent.
 
 This function should judge the positions based on expert knowledge of the game to distinguish good from bad moves.
 
@@ -218,7 +219,7 @@ Marbles that are close to the brink of the board put them into danger of being a
 
 $$ \text{distance} = n_{\text{self}} - n_{\text{opponent}} $$
 
-For both measures it is more convenient to represent the internal array indices of the marbles in a different coordinate system that has better mathmatical properties. In case of the hexagonal shape of the board a cube grid or an axial are very suitable.
+For both measures it is more convenient to represent the internal array indices of the marbles in a different coordinate system that has better mathematical properties. In case of the hexagonal shape of the board a cube grid or an axial are very suitable.
 
 \begin{figure}[!h]
   \centering
@@ -229,7 +230,7 @@ For both measures it is more convenient to represent the internal array indices 
   \subfloat[Cube grid coordinate system]{
     \includegraphics[width=5cm, keepaspectratio]{hex_cube_grid.png}
   }
-  \caption{Different options for hexaganonal grids \cite{noauthor_red_nodate}}
+  \caption{Different options for hexagonal grids \cite{noauthor_red_nodate}}
   \label{hex_grids}
 \end{figure}
 
@@ -279,7 +280,7 @@ $$
 \subsection{Alpha-beta-pruning agent}
 Alpha-beta-pruning is an improvement of the minimax algorithm, that tries to eliminate unnecessary traversals down the search tree, which, in the best case, leads to a reduction of moves from $ O(b^d) $ to $ O(\sqrt{b^d}) $. The implementation of the alpha beta agent could be improved in several ways.
 
-The heuristic function is a linear compbination of the above mentioned heuristics was implemented as a linear combination:
+The heuristic function is a linear combination of the above mentioned heuristics was implemented as a linear combination:
 
 \begin{table}
   \begin{center}
@@ -311,7 +312,7 @@ Two different approaches were tested. The first one was based one the following 
   \item Move involving 2/3 marbles: +1/+2
 \end{itemize}
 
-Evaluating this function is computationally much less expensive than calculating the full heuristic function so this approach was tried first (Evaluation 1). In comparision to the algorithm without any ordering the visited nodes could be reduced drastically. Depending on the composition of the heuristic the node count for this ordering fluctuates significantly. If we compared it to the approach of using the heuristic itself for ordering, we see that this decreases the node count even further (c.f. table \ref{node_count}). A possible explanation for that would be, the more predictive the move ordering is of the final heuristic the less nodes are visited.
+Evaluating this function is computationally much less expensive than calculating the full heuristic function so this approach was tried first (Evaluation 1). In comparison to the algorithm without any ordering the visited nodes could be reduced drastically. Depending on the composition of the heuristic the node count for this ordering fluctuates significantly. If we compared it to the approach of using the heuristic itself for ordering, we see that this decreases the node count even further (c.f. table \ref{node_count}). A possible explanation for that would be, the more predictive the move ordering is of the final heuristic the less nodes are visited.
 
 \begin{table}
   \begin{center}
@@ -334,12 +335,12 @@ Evaluating this function is computationally much less expensive than calculating
 \end{table}
 
 \paragraph{Transposition table}
-Due to the nature of abalone there is multiple ways to reach the same configuration of the board. If we save the final value for a state determined by the algorithm, we can potentially save node visits if we visit that node again. To encode the board configurations efficiently, Zobrist Hashing \cite{noauthor_zobrist_nodate} was used. We hold a table with 9 x 9 entries (only 61 of 81 used) and within cell we hold another 2 cells for the distinct game pieces (black and white marbles). In each cell we store a 64 bit random string.
+Due to the nature of abalone there are multiple ways to reach the same configuration of the board. If we save the final value for a state determined by the algorithm, we can potentially save node visits if we visit that node again. To encode the board configurations efficiently, Zobrist Hashing \cite{noauthor_zobrist_nodate} was used. We hold a table with 9 x 9 entries (only 61 of 81 used) and within the cell we hold another 2 cells for the distinct game pieces (black and white marbles). In each cell we store a 64 bit random string.
 
-For each marble on the board we use the indices of the positions on the board to retrieve a bitstring from our table and connect them with XOR to retrieve out final hash $h$.
+For each marble on the board we use the indices of the positions on the board to retrieve a bitstring from our table and connect them with XOR to retrieve our final hash $h$.
 
 \paragraph{Branch cutting}
-A problem with abalone is that for each configuration there are many possible moves (high branching factor) and many of those possible moves are very bad. If we have a sensible move ordering we might be potentially exclude many of the useless moves to have a faster agent. For this implementation we only include at most the first 30 first moves from the ordered list.
+A problem with abalone is that for each configuration there are many possible moves (high branching factor) and many of those possible moves are very bad. If we have a sensible move ordering we might potentially exclude many of the useless moves to have a faster agent. For this implementation we only include at most the first 30 first moves from the ordered list.
 
 \begin{table}
   \begin{center}
@@ -364,36 +365,59 @@ A problem with abalone is that for each configuration there are many possible mo
 \paragraph{Further improvement}
 At this point the choice of the library also becomes relevant. Even though the reduction of node visits brings the most noticable difference in time for deliberation, the implementation can make a significant impact as well. There are two components of the game library that are called extremely often and thereby heavily profit from performance improvements.
 
-For one that is the routine to generate all possible moves. For each node expansion this function is called. By forking the game library \cite{campfireman_campfiremanabalone-boai_2021} and make improvements to that function the execution time could be reduced to 10\% of its original value. Furthermore, a tradeoff between execution time and memory was made, by storing and updating the current positions of the marbles, instead of iterating the entire board array.
+For one that is the routine to generate all possible moves. For each node expansion this function is called. By forking the game library \cite{campfireman_campfiremanabalone-boai_2021} and making improvements to that function the execution time could be reduced to 10\% of its original value. Furthermore, a tradeoff between execution time and memory was made, by storing and updating the current positions of the marbles, instead of iterating the entire board array.
 
-\subsubsection{Monte Carlo Search agent}
+\subsection{Monte Carlo Search agent}
+Monte Carlo Tree Search promises to improve on some of the pitfalls posed by alpha-beta/minimax by allowing for a greater search depth and not using a heuristic function. In its simplest/purest form moves are evaluated by performing a playout, simulating the game until its end. The playout policy for selecting the moves in the playout is in its simplest form random move selection.
+
+Due to the large set of possible moves, the selection of random moves as playout policy has bad performance especially when the number of simulations is limited to a relatively small $n$. For the pure implementation we get about 1000 simulations when the move time is limited to 20 seconds.
+
+\paragraph{UCB}
+Whereas in the pure implementation each move gets an equal amount of simulations, we can select the next node to expand based on how promising the node(n) it is. We normalize the utility $U(n)$ by the number of games $N(n)$. By considering how often a node and its parent have been visited already, we want them to be visited more often in the beginning, before we solely decide based on utility. For this implementation a $ C = \sqrt{2}$ was chosen. \cite[p.327 ff]{russell_artificial_2021}
+
+$$
+  UCB(n) = \frac{U(n)}{N(n)} + C \times \sqrt{\frac{\log{N(Parent(n))}}{N(n)}}
+$$
+
+\paragraph{Playout policy}
+Ideally, we want the players in the simulations to make very good decisions for their moves such that the playout's result is very meaningful. In order to achieve that the Evaluation 1 function from above was used to order the moves and expand only the best moves. This comes at a great computational cost, almost halving the amount of simulations but potentially improving the quality.
+
+\paragraph{Other improvements}
+Again by making adjustments to the game library significant performance improvements could be made. Namely by creating a new function for the generation of a random move. Instead of creating all possible moves and then selecting a random one, a random move is generated directly.
 
 \subsection{Algorithm comparison}
-
+As follows the results of different pairings of algorithms and their variations.
 
 \begin{table}
-  \begin{center}
-    \begin{tabular}{ | c | c | c | c | c | }
-      \hline
-      Black player & White player & Marbles lost black & Marbles lost white & avg. time p. move \\
-      \hline
-      1            & 45           & 45                 & 31                 & 8                 \\
-      \hline
-      2            & 132          & 132                & 90                 & 60                \\
-      \hline
-      3            & 2432         & 2423               & 1019               & 464               \\
-      \hline
-      4            & 6918         & 5829               & 2435               & 3600              \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Nodes visited with/without transposition table, branch cutting and the optimal case}
-  \label{node_count}
+  \begin{adjustwidth}{-5in}{-5in}% adjust the L and R margins by 1 inch
+    \begin{center}
+      \begin{tabular}{ | c | c | c | c | c | c | c | c | }
+        \hline
+        Black player               & White player        & \small{Marbles lost b} & \small{Marbles lost w} & \small{time p. move b} & \small{time p. move w} & \small{total moves (avg)} & n \\
+        \hline
+        AlphaBeta (d=3)            & Random              & 0.2                    & 6.0                    & 11.11                  & 0.0                    & 57.6                      & 5 \\
+        \hline
+        AlphaBeta (d=4)            & Random              & 0.0                    & 6.0                    & 142.8                  & 0.0                    & 52.4                      & 5 \\
+        \hline
+        AlphaBeta (d=3)            & AlphaBetaFast (d=3) & 6.0                    & 5.0                    & 10.02                  & 4.16                   & 92                        & 1 \\
+        \hline
+        MonteCarloPure (t=20s)     & RandomPlayer        & 5.0                    & 0.0                    & 20.33                  & 0.0                    & 1008.0                    & 1 \\
+        \hline
+        MonteCarloImproved (t=20s) & RandomPlayer        & 0.0                    & 6.0                    & 20.05                  & 0.0                    & 306.0                     & 1 \\
+        \hline
+        MonteCarloImproved (t=20s) & AlphaBetaFast (d=3) & 0.0                    & 6.0                    & 69.0                   & 20.06                  & 6.24                      & 1 \\
+        \hline
+      \end{tabular}
+    \end{center}
+    \label{node_count}
+  \end{adjustwidth}
+  \medskip% adds some space after the table
+  \caption{Face-off results}
 \end{table}
 
-
-
 \section{Conclusion}
+Overall, the implementation of the agents posed a much greater engineering challenge than expected. The basic algorithms were implemented quickly, but two tweak them until they have acceptable move-times required a lot of effort. It is interesting that the basic implementation of the Monte Carlo Search agents performed so poorly. Especially, combined with more modern techniques the MCTS agent still is extremely promising and worth further investigation.
+
 
 % Literatur
 \bibliographystyle{splncs04.bst}
