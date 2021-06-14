@@ -70,38 +70,102 @@ def main():
     for position in POSITIONS:
         game = Game(initial_position=position)
         algorithms = [
-            {
-                'class': players.AlphaBetaSimple,
-                'args': (game, game.turn),
-                'kwargs': {
-                    'depth': 1,
-                    'func': count_nodes,
-                },
-            },
-            {
-                'class': players.AlphaBetaSimple,
-                'args': (game, game.turn),
-                'kwargs': {
-                    'depth': 2,
-                    'func': count_nodes,
-                },
-            },
-            {
-                'class': players.AlphaBetaSimple,
-                'args': (game, game.turn),
-                'kwargs': {
-                    'depth': 3,
-                    'func': count_nodes,
-                },
-            },
-            {
-                'class': players.AlphaBetaSimple,
-                'args': (game, game.turn),
-                'kwargs': {
-                    'depth': 4,
-                    'func': count_nodes,
-                },
-            },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 1,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 2,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 3,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 1,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 2,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 3,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimple,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleOrdering,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 1,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleOrdering,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 2,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleOrdering,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 3,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaSimpleOrdering,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 4,
+            #         'func': count_nodes,
+            #     },
+            # },
             # {
             #     'class': players.AlphaBetaAdvanced,
             #     'args': (game, game.turn),
@@ -126,24 +190,40 @@ def main():
             #         'func': count_nodes,
             #     },
             # },
-            {
-                'class': players.AlphaBetaAdvanced,
-                'args': (game, game.turn),
-                'kwargs': {
-                    'depth': 4,
-                    'func': count_nodes,
-                },
-            },
             # {
-            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'class': players.AlphaBetaAdvanced,
             #     'args': (game, game.turn),
             #     'kwargs': {
-            #         'depth': 3,
+            #         'depth': 4,
             #         'func': count_nodes,
             #     },
             # },
             # {
-            #     'class': players.AlphaBetaSimpleUnordered,
+            #     'class': players.AlphaBetaAdvancedFast,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 1,
+            #         'func': count_nodes,
+            #     },
+            # },
+            # {
+            #     'class': players.AlphaBetaAdvancedFast,
+            #     'args': (game, game.turn),
+            #     'kwargs': {
+            #         'depth': 2,
+            #         'func': count_nodes,
+            #     },
+            # },
+            {
+                'class': players.AlphaBetaAdvancedFast,
+                'args': (game, game.turn),
+                'kwargs': {
+                    'depth': 3,
+                    'func': count_nodes,
+                },
+            },
+            # {
+            #     'class': players.AlphaBetaAdvancedFast,
             #     'args': (game, game.turn),
             #     'kwargs': {
             #         'depth': 4,

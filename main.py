@@ -62,7 +62,7 @@ if __name__ == '__main__':  # pragma: no cover
             score_white=score[1],
             total_time=total_time,
             moves=move_stats,
-        ).save()
+        ).save_pickle()
         print(f'Time to simulate: {total_time}')
         print(f'Total moves: {len(moves_history)}')
 

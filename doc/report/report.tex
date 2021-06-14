@@ -24,16 +24,39 @@
 
 % Grafiken einbinden
 \usepackage{graphicx}
-\graphicspath{{figures/}}
+\graphicspath{{../figures/}}
 
 \usepackage{hyperref}
 % tiefe des Inhaltsverzeichnisses
 \setcounter{tocdepth}{2}
 
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
 
 \begin{document}
 
-\title{Exploration of classical and modern Abalone game-playing agents}
+\title{Exploration of Abalone game-playing agents}
 \author{Ture Claußen, 202132027, \email{ture.claussen@stud.hs-hannover.de}}
 \authorrunning{T. Claußen}
 \institute{Dept. of Software and Computer Engineering, Ajou University}
@@ -143,6 +166,12 @@ $$
 
 \paragraph{Game tree complexity} The game tree defines the dependencies between board positions (nodes) and moves (edges). First we consider the branching factor (how many moves are possible in one position) of the game tree, which is on average 60. We combine that number with the height of the tree to get the total number of leaves. As the length of a game varies greatly, we use the average length of a game which is 87: $60^{87}$ \cite{lemmens_constructing_2005}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=7cm, keepaspectratio]{distribution_of_moves.png}
+  \caption{Counts of moves available for random for random player in 5 games}
+\end{figure}
+
 Putting Abalone's complexity in relation with other popular games, its state space complexity is on the same level as Reversi, whilst its game tree surpasses chess in complexity (c.f. table \ref{complexity_table})
 
 \begin{table}
@@ -168,30 +197,205 @@ Putting Abalone's complexity in relation with other popular games, its state spa
 \end{table}
 
 
-\subsection{Algorithm design}
+\section{Algorithm design}
 
 
-\subsection{Algorithm comparison}
-The main goal of the project is to compare several algorithmic approaches for the game-playing agent. The approaches shall be evaluated and compared in their:
+\subsection{Heuristics}
+As the size of the game tree ist very large, the search on the tree usually does not reach terminal leaves that indicate a clear loss or win. Rather one has to evaluate the intermediary result of a given transposition based on a heuristic function. As algorithms like minimax optimize the potential outcome of the next moves based on this function, the heuristics solely determine the performance of such an agent.
+
+This function should judge the positions based on expert knowledge of the game to distinguish good from bad moves.
+
+\paragraph{Adjacency}
+As a majority of marbles is required to push opponent's marbles and conversely an equal amount of marbles is needed to avoid being pushed, it can be assumed that keeping one's marbles grouped together is a good move. The measure of adjacency is calculated by iterating over all marbles and counting the directly neighboring marbles that have the same color. We sum up these counts for each player and measure the difference:
+$$ \text{adjacency} = n_{\text{self}} - n_{\text{opponent}} $$
+
+This puts the two counts into a relation and produces a negative sign, when the opponent has the upper hand.
+
+% image on how to calculate
+
+\paragraph{Distance to center}
+Marbles that are close to the brink of the board put them into danger of being attacked, wherefore it is generally good to place all of the marbles into the center of the board. For each player's marbles we measure their distance from the center of the board as the smallest amount of moves it would take to reach the center (Manhattan distance). Then again we sum up the distances and weigh them against each other to get the final measure:
+
+$$ \text{distance} = n_{\text{self}} - n_{\text{opponent}} $$
+
+For both measures it is more convenient to represent the internal array indices of the marbles in a different coordinate system that has better mathmatical properties. In case of the hexagonal shape of the board a cube grid or an axial are very suitable.
+
+\begin{figure}[!h]
+  \centering
+  \subfloat[Axial grid coordinate system]{
+    \includegraphics[width=5cm, keepaspectratio]{hex_axial_grid.png}
+  }
+  \hfill
+  \subfloat[Cube grid coordinate system]{
+    \includegraphics[width=5cm, keepaspectratio]{hex_cube_grid.png}
+  }
+  \caption{Different options for hexaganonal grids \cite{noauthor_red_nodate}}
+  \label{hex_grids}
+\end{figure}
+
+That way we can obtain the neighbors by just incrementing and decrementing our x-, y- and z-components.
+
+\begin{figure}
+  \begin{lstlisting}
+  DIRECTIONS = {
+    (+1, 0, -1): Direction.NORTH_EAST,
+    (+1, -1, 0): Direction.EAST,
+    (0, -1, +1): Direction.SOUTH_EAST,
+    (-1, 0, +1): Direction.SOUTH_WEST,
+    (-1, +1, 0): Direction.WEST,
+    (0, 1, -1): Direction.NORTH_WEST
+  }
+\end{lstlisting}
+  \label{directions}
+  \caption{Movements mapped to required increments and decrements}
+\end{figure}
+
+The same goes for calculating the distance which becomes in this space much more intuitive \ref{distance}.
+
+\begin{figure}
+  \begin{lstlisting}
+    def distance(self, other: Cube) -> int:
+        return max(abs(self.x - other.x), abs(self.y - other.y), abs(self.z - other.z))
+\end{lstlisting}
+  \label{distance}
+  \caption{Code to calculate the distance between two cube coordinates \cite{noauthor_ture_nodate}}
+\end{figure}
+
+\paragraph{Score}
+By comparing the current configuration of the board to following states in the search tree we can obtain a count of how many marbles were lost and how many were won and again weigh those against each other.
+
+$$ \text{marbleRatio} = n_{\text{won}} - n_{\text{lost}} $$
+
+\paragraph{Win and Loss}
+Lastly as a more definitive measure we can indicate whether the current state is a terminal state and hence a winning or losing state.
+
+$$ \text{winLoss} =
+  \begin{cases}
+    1 \text{ if game won } \\
+    -1 \text{ otherwise}
+  \end{cases}
+$$
+
+\subsection{Alpha-beta-pruning agent}
+Alpha-beta-pruning is an improvement of the minimax algorithm, that tries to eliminate unnecessary traversals down the search tree, which, in the best case, leads to a reduction of moves from $ O(b^d) $ to $ O(\sqrt{b^d}) $. The implementation of the alpha beta agent could be improved in several ways.
+
+The heuristic function is a linear compbination of the above mentioned heuristics was implemented as a linear combination:
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | c | c | }
+      \hline
+      Heuristic   & weight \\
+      \hline
+      adjacency   & 1      \\
+      \hline
+      distance    & -1.5   \\
+      \hline
+      marbleRatio & 100    \\
+      \hline
+      winLoss     & 100000 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Weights for the linear combination}
+  \label{heuristic_table}
+\end{table}
+\paragraph{Move ordering}
+To increase the likelihood of pruning taking place we need to order the moves, such that for the maximizer the best moves come first and for the minimizer vice versa. What constitutes a good move is determined by the heuristic function. That means our move ordering has to be predictive of the resulting heuristic evaluation of the move.
+
+Two different approaches were tested. The first one was based one the following hierarchy:
 
 \begin{itemize}
-  \item Win/Loss-ratio
-  \item Time to deliberate
+  \item Move capturing marble: +3
+  \item Move pushing marble: +1
+  \item Move involving 2/3 marbles: +1/+2
 \end{itemize}
 
+Evaluating this function is computationally much less expensive than calculating the full heuristic function so this approach was tried first (Evaluation 1). In comparision to the algorithm without any ordering the visited nodes could be reduced drastically. Depending on the composition of the heuristic the node count for this ordering fluctuates significantly. If we compared it to the approach of using the heuristic itself for ordering, we see that this decreases the node count even further (c.f. table \ref{node_count}). A possible explanation for that would be, the more predictive the move ordering is of the final heuristic the less nodes are visited.
 
-\paragraph{Alpha-beta pruning}
-This is the most explored and classical approach, wherefore it will form the baseline for the comparison. It will be necessary to find solutions on how to deal with the complexity of the game tree, such as iterative deepening, ordering of the nodes or various heuristics.
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | c | c | c | c | c | }
+      \hline
+      Depth & Without ordering & Evaluation 1 & Evaluation 2 & $\sqrt{b^d}$ \\
+      \hline
+      1     & 45               & 45           & 45           & 8            \\
+      \hline
+      2     & 1594             & 304          & 132          & 60           \\
+      \hline
+      3     & 9755             & 4971         & 2423         & 464          \\
+      \hline
+      4     & 457309           & 94650        & 6918         & 3600         \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Nodes visited with/without move ordering and the optimal case}
+  \label{node_count}
+\end{table}
 
-\paragraph{Monte Carlo Tree Search}
-There are many strategies on how to implement the concept of Monte Carlo tree search, in this analysis the simplest approach will be utilized: Simulation of a certain number of games to decide the next move.
+\paragraph{Transposition table}
+Due to the nature of abalone there is multiple ways to reach the same configuration of the board. If we save the final value for a state determined by the algorithm, we can potentially save node visits if we visit that node again. To encode the board configurations efficiently, Zobrist Hashing \cite{noauthor_zobrist_nodate} was used. We hold a table with 9 x 9 entries (only 61 of 81 used) and within cell we hold another 2 cells for the distinct game pieces (black and white marbles). In each cell we store a 64 bit random string.
 
-\paragraph{Q-Learning}
-Even though this class does not look at reinforcement methods in particular, Q-Learning seems to be a suitable method for a machine-learning based agent. The fact that it is a more simple algorithm, should allow for a timely implementation.
+For each marble on the board we use the indices of the positions on the board to retrieve a bitstring from our table and connect them with XOR to retrieve out final hash $h$.
+
+\paragraph{Branch cutting}
+A problem with abalone is that for each configuration there are many possible moves (high branching factor) and many of those possible moves are very bad. If we have a sensible move ordering we might be potentially exclude many of the useless moves to have a faster agent. For this implementation we only include at most the first 30 first moves from the ordered list.
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | c | c | c | c | c | }
+      \hline
+      Depth & Without TT & With TT & With TT and cutting & $\sqrt{b^d}$ \\
+      \hline
+      1     & 45         & 45      & 31                  & 8            \\
+      \hline
+      2     & 132        & 132     & 90                  & 60           \\
+      \hline
+      3     & 2432       & 2423    & 1019                & 464          \\
+      \hline
+      4     & 6918       & 5829    & 2435                & 3600         \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Nodes visited with/without transposition table, branch cutting and the optimal case}
+  \label{node_count}
+\end{table}
+
+\paragraph{Further improvement}
+At this point the choice of the library also becomes relevant. Even though the reduction of node visits brings the most noticable difference in time for deliberation, the implementation can make a significant impact as well. There are two components of the game library that are called extremely often and thereby heavily profit from performance improvements.
+
+For one that is the routine to generate all possible moves. For each node expansion this function is called. By forking the game library \cite{campfireman_campfiremanabalone-boai_2021} and make improvements to that function the execution time could be reduced to 10\% of its original value. Furthermore, a tradeoff between execution time and memory was made, by storing and updating the current positions of the marbles, instead of iterating the entire board array.
+
+\subsubsection{Monte Carlo Search agent}
+
+\subsection{Algorithm comparison}
+
+
+\begin{table}
+  \begin{center}
+    \begin{tabular}{ | c | c | c | c | c | }
+      \hline
+      Black player & White player & Marbles lost black & Marbles lost white & avg. time p. move \\
+      \hline
+      1            & 45           & 45                 & 31                 & 8                 \\
+      \hline
+      2            & 132          & 132                & 90                 & 60                \\
+      \hline
+      3            & 2432         & 2423               & 1019               & 464               \\
+      \hline
+      4            & 6918         & 5829               & 2435               & 3600              \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Nodes visited with/without transposition table, branch cutting and the optimal case}
+  \label{node_count}
+\end{table}
+
+
 
 \section{Conclusion}
 
 % Literatur
 \bibliographystyle{splncs04.bst}
-\bibliography{ref.bib}
+\bibliography{../ref.bib}
 \end{document}

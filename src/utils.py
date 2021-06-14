@@ -82,7 +82,7 @@ class MoveStats:
 
 
 @dataclass
-class GameStats:
+class GameStats(Stats):
     name_black: str
     name_white: str
     score_black: int
@@ -92,9 +92,18 @@ class GameStats:
 
     _dir = 'games'
 
-    def save(self):
-        write_to_file(asdict(self), os.path.join(
-            self._dir, f'{time.time()}.pickle'))
+    def save_pickle(self) -> str:
+        print(f'[ ] Saving {self.name_black} vs {self.name_white}')
+        filename = time.time()
+        path = os.path.join(
+            self._dir, f'{filename}.pickle')
+        write_to_file(asdict(self), path)
+        print(f'[x] Save {path}')
+        return filename
+
+    @classmethod
+    def print(cls, filename):
+        pprint(open_from_file(os.path.join(cls._dir, filename)))
 
 
 class Storage:

@@ -163,42 +163,6 @@ class AlphaBetaSimple(AlphaBetaBase):
 
     def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
         return self._heuristic(result)
-    # def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
-    #     old_score = self.game.get_score()
-    #     new_score = result.get_score()
-    #     if utils.game_is_over(new_score):
-    #         w_0 = 10000
-    #         winner = utils.get_winner(new_score)
-    #         # return as winning or losing move
-    #         return w_0 * 1 if winner.value == self.player else w_0 * -1
-    #     enemy_selector = 1 if self.player == Player.BLACK.value else 0
-    #     self_selector = 0 if self.player == Player.BLACK.value else 1
-
-    #     captured = old_score[enemy_selector] - new_score[enemy_selector]
-    #     lost = new_score[self_selector] - old_score[self_selector]
-
-    #     multiple = 0
-    #     attacking = 0
-    #     if isinstance(marbles, tuple):
-    #         c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
-    #         c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
-    #         multiple = c1.distance(c2)
-    #     else:
-    #         line = line_to_edge(marbles, direction)
-    #         own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
-    #             line)
-    #         multiple = own_marbles_num - 1
-    #         if opp_marbles_num > 0:
-    #             attacking += 1
-    #     if self.game.turn.value == self.not_player:
-    #         multiple = -multiple
-    #         attacking = - attacking
-
-    #     # weights for the linear combination
-    #     w_0 = 1
-    #     w_1 = 3
-    #     w_2 = 2
-    #     return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
 
     def _count_heuristics(self, game: Game) -> dict:
         result = {}
@@ -255,18 +219,50 @@ class AlphaBetaSimple(AlphaBetaBase):
         return heuristic
 
 
+class AlphaBetaSimpleOrdering(AlphaBetaSimple):
+    def _evaluate_move(self, result: Game, marbles: Union[Space, Tuple[Space, Space]], direction: Direction) -> float:
+        old_score = self.game.get_score()
+        new_score = result.get_score()
+        if utils.game_is_over(new_score):
+            w_0 = 10000
+            winner = utils.get_winner(new_score)
+            # return as winning or losing move
+            return w_0 * 1 if winner.value == self.player else w_0 * -1
+        enemy_selector = 1 if self.player == Player.BLACK.value else 0
+        self_selector = 0 if self.player == Player.BLACK.value else 1
+
+        captured = old_score[enemy_selector] - new_score[enemy_selector]
+        lost = new_score[self_selector] - old_score[self_selector]
+
+        multiple = 0
+        attacking = 0
+        if isinstance(marbles, tuple):
+            c1 = Cube.from_board_array(*space_to_board_indices(marbles[0]))
+            c2 = Cube.from_board_array(*space_to_board_indices(marbles[1]))
+            multiple = c1.distance(c2)
+        else:
+            line = line_to_edge(marbles, direction)
+            own_marbles_num, opp_marbles_num = self.game._inline_marbles_nums(
+                line)
+            multiple = own_marbles_num - 1
+            if opp_marbles_num > 0:
+                attacking += 1
+        if self.game.turn.value == self.not_player:
+            multiple = -multiple
+            attacking = - attacking
+
+        # weights for the linear combination
+        w_0 = 1
+        w_1 = 3
+        w_2 = 2
+        return w_0 * multiple + w_1 * captured + w_1 * lost + w_2 * attacking
+
+
 class AlphaBetaAdvanced(AlphaBetaSimple):
     def __init__(self, game, perspective, depth=3, alpha=float('-inf'), beta=float('inf'), is_maximizer=True, marbles=None, direction=None, func=None):
         super().__init__(game, perspective, depth=depth, alpha=alpha, beta=beta,
                          is_maximizer=is_maximizer, marbles=marbles, direction=direction, func=func)
         self.key = storage.get_key(self.game.marbles)
-
-    # def _heuristic(self, game):
-    #     heuristic = storage.get_cache_value(self.key)
-    #     if heuristic is None:
-    #         heuristic = super()._heuristic(game)
-    #         storage.set_cache_value(self.key, heuristic)
-    #     return heuristic
 
     def pre_hook(self):
         result = storage.get_tt_value(self.key, self.game.marbles, self.depth)
@@ -306,12 +302,16 @@ class AlphaBetaPlayer(AbstractPlayer):
     '''
     '''
 
-    def __str__(self):
-        return f'AlphaBetaPlayer_{self.version}'
+    def __init__(self, *args, depth=3, verbose=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.depth = depth
+        self.verbose = verbose
 
-    @ property
-    def version(self) -> str:
-        return '1'
+    def __str__(self):
+        return f'AlphaBetaPlayer depth: {self.depth} algo: {str(self.get_algorithm())}'
+
+    def get_algorithm(self):
+        return AlphaBetaSimple
 
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
         global nodes
@@ -320,12 +320,18 @@ class AlphaBetaPlayer(AbstractPlayer):
         def count_nodes():
             global nodes
             nodes += 1
-        result = AlphaBetaAdvancedFast(
-            game, game.turn.value, func=count_nodes, depth=4).run()
-        print(f'Heuristic: {result[0]}')
-        print(f'Nodes visited: {nodes}')
+        result = self.get_algorithm()(
+            game, game.turn.value, func=count_nodes, depth=self.depth).run()
+        if self.verbose:
+            print(f'Heuristic: {result[0]}')
+            print(f'Nodes visited: {nodes}')
 
         return [result[1], result[2]]
+
+
+class AlphaBetaPlayerFast(AlphaBetaPlayer):
+    def get_algorithm(self):
+        return AlphaBetaAdvancedFast
 
 
 @dataclass
@@ -422,8 +428,8 @@ class MonteCarloSearch(Algorithm):
             self.backpropagate(leaf, simulation_result)
             child_count += 1
             sim_count += 1
-        print(f'child_count: {self.counter} sim_count: {sim_count}')
-        self.root.print()
+        # print(f'child_count: {self.counter} sim_count: {sim_count}')
+        # self.root.print()
         return self.choose_best(self.root)
 
     def choose_best(self, root: MctsNode) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
@@ -513,6 +519,21 @@ class MonteCarloSearchImproved(MonteCarloSearch):
 
 
 class MonteCarloPlayer(AbstractPlayer):
+    def __init__(self, *args, max_time=10, verbose=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_time = max_time
+
+    def __str__(self):
+        return f'MonteCarlo player max_time: {self.max_time} algo: {str(self.get_algorithm())}'
+
+    def get_algorithm(self):
+        return MonteCarloSearch
+
     def turn(self, game: Game, moves_history: List[Tuple[Union[Space, Tuple[Space, Space]], Direction]]) -> Tuple[Union[Space, Tuple[Space, Space]], Direction]:
-        result = MonteCarloSearchImproved(game, max_time=15).run()
+        result = self.get_algorithm()(game, max_time=self.max_time).run()
         return result
+
+
+class MonteCarloPlayerImproved(AbstractPlayer):
+    def get_algorithm(self):
+        return MonteCarloSearchImproved
