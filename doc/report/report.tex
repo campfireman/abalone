@@ -66,8 +66,8 @@
 {\def\addcontentsline#1#2#3{}\maketitle} % Wird gebraucht, damit der Title nicht im Inhaltsverzeichnis steht
 
 \begin{abstract}
-  Perfect information games provide a good environment for artificial agents to navigate in, as they have a clear performance measure for comparison with each other and humans. Their determinism removes some of the engineering problems of agents in the physical world. In the following we implement and compare alpha-beta pruning and Monte Carlo Tree Search for the game Abalone, to come to a conclusion about their resource-consumption and performance.
-  \keywords{AI \and Alpha-beta \and Monte-Carlo-Tree-Search \and Abalone \and Intelligent Agents}
+	Perfect information games provide a good environment for artificial agents to navigate in, as they have a clear performance measure for comparison with each other and humans. Their determinism removes some of the engineering problems of agents in the physical world. In the following we implement and compare alpha-beta pruning and Monte Carlo Tree Search for the game Abalone, to come to a conclusion about their resource-consumption and performance.
+	\keywords{AI \and Alpha-beta \and Monte-Carlo-Tree-Search \and Abalone \and Intelligent Agents}
 \end{abstract}
 
 \section{Introduction}
@@ -86,16 +86,16 @@ Over the course of my current study of applied computer science I gained versati
 Considering the existing landscape of papers, there is unquestionably a wide array of papers exploring the application of minimax and alpha-beta pruning on the game of Abalone. Some of the most prominent include:
 
 \begin{enumerate}
-  \item "Algorithmic fun-abalone" (2002) Considers foundational heuristics for the game and analyzes minimax and its refinements in the form of (heuristic) alpha-beta pruning. Furthermore it sheds light on the performance differences between those. \cite{aichholzer_algorithmic_2002}
-  \item "A Simple Intelligent Agent for Playing Abalone Game: ABLA" (2004) Implementation of a game-playing agent with minimax, alpha-beta pruning and some custom heuristics. The evaluation of the performance is done by comparing the agent to existing software in the form of ABA-PRO and RandomSoft.\cite{ozcan_simple_2004}
-  \item "Constructing an abalone game-playing agent" (2005) Provides a very thorough explanation and analysis of the game's fundamentals, such as the state space, rules and positions. In regards to the alpha-beta pruning it also explains strategies for ordering the nodes and performance concerns. \cite{lemmens_constructing_2005}
-  \item "Implementing a computer player for abalone using alpha-beta and monte-carlo search" (2009) This master thesis is a very exhaustive analysis of the game, alpha-beta pruning and Monte Carlo tree search, conferring many of the previous results. \cite{chorus_implementing_2009}
+	\item "Algorithmic fun-abalone" (2002) Considers foundational heuristics for the game and analyzes minimax and its refinements in the form of (heuristic) alpha-beta pruning. Furthermore it sheds light on the performance differences between those. \cite{aichholzer_algorithmic_2002}
+	\item "A Simple Intelligent Agent for Playing Abalone Game: ABLA" (2004) Implementation of a game-playing agent with minimax, alpha-beta pruning and some custom heuristics. The evaluation of the performance is done by comparing the agent to existing software in the form of ABA-PRO and RandomSoft.\cite{ozcan_simple_2004}
+	\item "Constructing an abalone game-playing agent" (2005) Provides a very thorough explanation and analysis of the game's fundamentals, such as the state space, rules and positions. In regards to the alpha-beta pruning it also explains strategies for ordering the nodes and performance concerns. \cite{lemmens_constructing_2005}
+	\item "Implementing a computer player for abalone using alpha-beta and monte-carlo search" (2009) This master thesis is a very exhaustive analysis of the game, alpha-beta pruning and Monte Carlo tree search, conferring many of the previous results. \cite{chorus_implementing_2009}
 \end{enumerate}
 
 These resources give great insight into the classical approaches, but they are lacking certain qualities:
 \begin{itemize}
-  \item Accessible and freely explorable code that underlies the analysis
-  \item Comparison with modern approaches like Q-Learning that might reduce the resource demand on the client side
+	\item Accessible and freely explorable code that underlies the analysis
+	\item Comparison with modern approaches like Q-Learning that might reduce the resource demand on the client side
 \end{itemize}
 
 The proposed project seeks to build upon the given insight to improve upon these missing qualities.
@@ -104,39 +104,39 @@ The proposed project seeks to build upon the given insight to improve upon these
 The goal of the game is to push six of the opponent's marbles off the playing field. The game's starting position is depicted in figure \ref{basics} (a). One, two, or three adjacent marbles (of the player's own color) may be moved in any of the six possible directions during a player's turn. We differentiate between broadside or "side-step" moves and "in-line" moves, depending on how the chain of marbles moves relative to its direction, which is shown in figure \ref{basics} (b) and (c).
 
 \begin{figure}[!h]
-  \centering
-  \subfloat[Starting position]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_starting_position.png}
-  }
-  \hfill
-  \subfloat["In-line" moves]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_inline_move.png}
-  }
-  \hfill
-  \subfloat["Side-step" moves]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_side_step_move.png}
-  }
-  \caption{Basic moves \cite{abalone_sa_abalone_nodate}}
-  \label{basics}
+	\centering
+	\subfloat[Starting position]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_starting_position.png}
+	}
+	\hfill
+	\subfloat["In-line" moves]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_inline_move.png}
+	}
+	\hfill
+	\subfloat["Side-step" moves]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_side_step_move.png}
+	}
+	\caption{Basic moves \cite{abalone_sa_abalone_nodate}}
+	\label{basics}
 \end{figure}
 
 A move pushing the opponent's marbles is called "sumito" and comes in three variations, as shown by figure \ref{sumito}. Essentially, the player has to push with superior numbers and the opponent's marbles can not be blocked. This is the game mechanic that allows for pushing the marbles out of the game and winning.
 
 \begin{figure}[!h]
-  \centering
-  \subfloat["2-push-1" sumito]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_2-push-1_sumito.png}
-  }
-  \hfill
-  \subfloat["3-push-1" sumito]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_3-push-1_sumito.png}
-  }
-  \hfill
-  \subfloat["3-push-2" sumito]{
-    \includegraphics[width=3cm, keepaspectratio]{rules_3-push-2_sumito.png}
-  }
-  \caption{Sumito positions allow pushing the opponent's marbles \cite{abalone_sa_abalone_nodate}}
-  \label{sumito}
+	\centering
+	\subfloat["2-push-1" sumito]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_2-push-1_sumito.png}
+	}
+	\hfill
+	\subfloat["3-push-1" sumito]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_3-push-1_sumito.png}
+	}
+	\hfill
+	\subfloat["3-push-2" sumito]{
+		\includegraphics[width=3cm, keepaspectratio]{rules_3-push-2_sumito.png}
+	}
+	\caption{Sumito positions allow pushing the opponent's marbles \cite{abalone_sa_abalone_nodate}}
+	\label{sumito}
 \end{figure}
 
 \section{Project details}
@@ -146,10 +146,10 @@ A move pushing the opponent's marbles is called "sumito" and comes in three vari
 Based on the PEAS framework we can analyze the task environment for the agent. \cite[p.107]{russell_artificial_2021}
 
 \begin{description}
-  \item[Performance measure] Win/loss, number of moves, time to deliberate
-  \item[Environment] Digital playing board
-  \item[Actuators] Move marbles, display text to CLI
-  \item[Sensors] Position of marbles
+	\item[Performance measure] Win/loss, number of moves, time to deliberate
+	\item[Environment] Digital playing board
+	\item[Actuators] Move marbles, display text to CLI
+	\item[Sensors] Position of marbles
 \end{description}
 
 If we look at the environment more closely we see that it is fully observable, two-agent, competitive, sequential, static and discrete.
@@ -162,39 +162,39 @@ An important characteristic of a game environment is its complexity, which can b
 The state space is the collection of all possible states the agent can be in.\cite[p. 150]{russell_artificial_2021} For Abalone this means we have to consider all possible board configurations with different numbers of marbles present. Additionally, we would have to correct duplicates that arise from the symmetries of the board. Ignoring this fact the following gives a good upper bound:
 
 $$
-  \sum_{k=8}^{14}\sum_{m=9}^{14}\frac{61!}{k!(61-k)!}\times\frac{(61-k)!}{m!((61-k)-m)!}
+	\sum_{k=8}^{14}\sum_{m=9}^{14}\frac{61!}{k!(61-k)!}\times\frac{(61-k)!}{m!((61-k)-m)!}
 $$
 
 \paragraph{Game tree complexity} The game tree defines the dependencies between board positions (nodes) and moves (edges). First we consider the branching factor (how many moves are possible in one position) of the game tree, which is on average 60. We combine that number with the height of the tree to get the total number of leaves. As the length of a game varies greatly, we use the average length of a game which is 87: $60^{87}$ \cite{lemmens_constructing_2005}
 
 \begin{figure}
-  \centering
-  \includegraphics[width=7cm, keepaspectratio]{distribution_of_moves.png}
-  \caption{Counts of moves available for random for random player in 5 games}
+	\centering
+	\includegraphics[width=7cm, keepaspectratio]{distribution_of_moves.png}
+	\caption{Counts of moves available for random for random player in 5 games}
 \end{figure}
 
 Putting Abalone's complexity in relation with other popular games, its state space complexity is on the same level as Reversi, whilst its game tree surpasses chess in complexity (c.f. table \ref{complexity_table})
 
 \begin{table}
-  \begin{center}
-    \begin{tabular}{ | c | c | c | }
-      \hline
-      Game        & state-space complexity (log) & game-tree complexity (log) \\
-      \hline
-      Tic-tac-toe & 3                            & 5                          \\
-      \hline
-      Reversi     & 28                           & 58                         \\
-      \hline
-      Chess       & 46                           & 123                        \\
-      \hline
-      Abalone     & 24                           & 154                        \\
-      \hline
-      Go          & 172                          & 360                        \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Abalone in comparison with other games \cite{chorus_implementing_2009}}
-  \label{complexity_table}
+	\begin{center}
+		\begin{tabular}{ | c | c | c | }
+			\hline
+			Game        & state-space complexity (log) & game-tree complexity (log) \\
+			\hline
+			Tic-tac-toe & 3                            & 5                          \\
+			\hline
+			Reversi     & 28                           & 58                         \\
+			\hline
+			Chess       & 46                           & 123                        \\
+			\hline
+			Abalone     & 24                           & 154                        \\
+			\hline
+			Go          & 172                          & 360                        \\
+			\hline
+		\end{tabular}
+	\end{center}
+	\caption{Abalone in comparison with other games \cite{chorus_implementing_2009}}
+	\label{complexity_table}
 \end{table}
 
 
@@ -217,27 +217,26 @@ This puts the two counts into a relation and produces a negative sign, when the 
 \paragraph{Distance to center}
 Marbles that are close to the brink of the board put them into danger of being attacked, wherefore it is generally good to place all of the marbles into the center of the board. For each player's marbles we measure their distance from the center of the board as the smallest amount of moves it would take to reach the center (Manhattan distance). Then again we sum up the distances and weigh them against each other to get the final measure:
 
-$$ \text{distance} = n_{\text{self}} - n_{\text{opponent}} $$
 
 For both measures it is more convenient to represent the internal array indices of the marbles in a different coordinate system that has better mathematical properties. In case of the hexagonal shape of the board a cube grid or an axial are very suitable.
 
 \begin{figure}[!h]
-  \centering
-  \subfloat[Axial grid coordinate system]{
-    \includegraphics[width=5cm, keepaspectratio]{hex_axial_grid.png}
-  }
-  \hfill
-  \subfloat[Cube grid coordinate system]{
-    \includegraphics[width=5cm, keepaspectratio]{hex_cube_grid.png}
-  }
-  \caption{Different options for hexagonal grids \cite{noauthor_red_nodate}}
-  \label{hex_grids}
+	\centering
+	\subfloat[Axial grid coordinate system]{
+		\includegraphics[width=5cm, keepaspectratio]{hex_axial_grid.png}
+	}
+	\hfill
+	\subfloat[Cube grid coordinate system]{
+		\includegraphics[width=5cm, keepaspectratio]{hex_cube_grid.png}
+	}
+	\caption{Different options for hexagonal grids \cite{noauthor_red_nodate}}
+	\label{hex_grids}
 \end{figure}
 
 That way we can obtain the neighbors by just incrementing and decrementing our x-, y- and z-components.
 
 \begin{figure}
-  \begin{lstlisting}
+	\begin{lstlisting}
   DIRECTIONS = {
     (+1, 0, -1): Direction.NORTH_EAST,
     (+1, -1, 0): Direction.EAST,
@@ -247,19 +246,19 @@ That way we can obtain the neighbors by just incrementing and decrementing our x
     (0, 1, -1): Direction.NORTH_WEST
   }
 \end{lstlisting}
-  \label{directions}
-  \caption{Movements mapped to required increments and decrements}
+	\label{directions}
+	\caption{Movements mapped to required increments and decrements}
 \end{figure}
 
 The same goes for calculating the distance which becomes in this space much more intuitive \ref{distance}.
 
 \begin{figure}
-  \begin{lstlisting}
+	\begin{lstlisting}
     def distance(self, other: Cube) -> int:
         return max(abs(self.x - other.x), abs(self.y - other.y), abs(self.z - other.z))
 \end{lstlisting}
-  \label{distance}
-  \caption{Code to calculate the distance between two cube coordinates \cite{noauthor_ture_nodate}}
+	\label{distance}
+	\caption{Code to calculate the distance between two cube coordinates \cite{noauthor_ture_nodate}}
 \end{figure}
 
 \paragraph{Score}
@@ -267,14 +266,14 @@ By comparing the current configuration of the board to following states in the s
 
 $$ \text{marbleRatio} = n_{\text{won}} - n_{\text{lost}} $$
 
-\paragraph{Win and Loss}
+\paragraph{Win and loss}
 Lastly as a more definitive measure we can indicate whether the current state is a terminal state and hence a winning or losing state.
 
 $$ \text{winLoss} =
-  \begin{cases}
-    1 \text{ if game won } \\
-    -1 \text{ otherwise}
-  \end{cases}
+	\begin{cases}
+		1 \text{ if game won } \\
+		-1 \text{ otherwise}
+	\end{cases}
 $$
 
 \subsection{Alpha-beta-pruning agent}
@@ -283,23 +282,23 @@ Alpha-beta-pruning is an improvement of the minimax algorithm, that tries to eli
 The heuristic function is a linear combination of the above mentioned heuristics was implemented as a linear combination:
 
 \begin{table}
-  \begin{center}
-    \begin{tabular}{ | c | c | }
-      \hline
-      Heuristic   & weight \\
-      \hline
-      adjacency   & 1      \\
-      \hline
-      distance    & -1.5   \\
-      \hline
-      marbleRatio & 100    \\
-      \hline
-      winLoss     & 100000 \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Weights for the linear combination}
-  \label{heuristic_table}
+	\begin{center}
+		\begin{tabular}{ | c | c | }
+			\hline
+			Heuristic   & weight \\
+			\hline
+			adjacency   & 1      \\
+			\hline
+			distance    & -1.5   \\
+			\hline
+			marbleRatio & 100    \\
+			\hline
+			winLoss     & 100000 \\
+			\hline
+		\end{tabular}
+	\end{center}
+	\caption{Weights for the linear combination}
+	\label{heuristic_table}
 \end{table}
 \paragraph{Move ordering}
 To increase the likelihood of pruning taking place we need to order the moves, such that for the maximizer the best moves come first and for the minimizer vice versa. What constitutes a good move is determined by the heuristic function. That means our move ordering has to be predictive of the resulting heuristic evaluation of the move.
@@ -307,31 +306,31 @@ To increase the likelihood of pruning taking place we need to order the moves, s
 Two different approaches were tested. The first one was based one the following hierarchy:
 
 \begin{itemize}
-  \item Move capturing marble: +3
-  \item Move pushing marble: +1
-  \item Move involving 2/3 marbles: +1/+2
+	\item Move capturing marble: +3
+	\item Move pushing marble: +1
+	\item Move involving 2/3 marbles: +1/+2
 \end{itemize}
 
 Evaluating this function is computationally much less expensive than calculating the full heuristic function so this approach was tried first (Evaluation 1). In comparison to the algorithm without any ordering the visited nodes could be reduced drastically. Depending on the composition of the heuristic the node count for this ordering fluctuates significantly. If we compared it to the approach of using the heuristic itself for ordering, we see that this decreases the node count even further (c.f. table \ref{node_count}). A possible explanation for that would be, the more predictive the move ordering is of the final heuristic the less nodes are visited.
 
 \begin{table}
-  \begin{center}
-    \begin{tabular}{ | c | c | c | c | c | }
-      \hline
-      Depth & Without ordering & Evaluation 1 & Evaluation 2 & $\sqrt{b^d}$ \\
-      \hline
-      1     & 45               & 45           & 45           & 8            \\
-      \hline
-      2     & 1594             & 304          & 132          & 60           \\
-      \hline
-      3     & 9755             & 4971         & 2423         & 464          \\
-      \hline
-      4     & 457309           & 94650        & 6918         & 3600         \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Nodes visited with/without move ordering and the optimal case}
-  \label{node_count}
+	\begin{center}
+		\begin{tabular}{ | c | c | c | c | c | }
+			\hline
+			Depth & Without ordering & Evaluation 1 & Evaluation 2 & $\sqrt{b^d}$ \\
+			\hline
+			1     & 45               & 45           & 45           & 8            \\
+			\hline
+			2     & 1594             & 304          & 132          & 60           \\
+			\hline
+			3     & 9755             & 4971         & 2423         & 464          \\
+			\hline
+			4     & 457309           & 94650        & 6918         & 3600         \\
+			\hline
+		\end{tabular}
+	\end{center}
+	\caption{Nodes visited with/without move ordering and the optimal case}
+	\label{node_count}
 \end{table}
 
 \paragraph{Transposition table}
@@ -343,23 +342,23 @@ For each marble on the board we use the indices of the positions on the board to
 A problem with abalone is that for each configuration there are many possible moves (high branching factor) and many of those possible moves are very bad. If we have a sensible move ordering we might potentially exclude many of the useless moves to have a faster agent. For this implementation we only include at most the first 30 first moves from the ordered list.
 
 \begin{table}
-  \begin{center}
-    \begin{tabular}{ | c | c | c | c | c | }
-      \hline
-      Depth & Without TT & With TT & With TT and cutting & $\sqrt{b^d}$ \\
-      \hline
-      1     & 45         & 45      & 31                  & 8            \\
-      \hline
-      2     & 132        & 132     & 90                  & 60           \\
-      \hline
-      3     & 2432       & 2423    & 1019                & 464          \\
-      \hline
-      4     & 6918       & 5829    & 2435                & 3600         \\
-      \hline
-    \end{tabular}
-  \end{center}
-  \caption{Nodes visited with/without transposition table, branch cutting and the optimal case}
-  \label{node_count}
+	\begin{center}
+		\begin{tabular}{ | c | c | c | c | c | }
+			\hline
+			Depth & Without TT & With TT & With TT and cutting & $\sqrt{b^d}$ \\
+			\hline
+			1     & 45         & 45      & 31                  & 8            \\
+			\hline
+			2     & 132        & 132     & 90                  & 60           \\
+			\hline
+			3     & 2432       & 2423    & 1019                & 464          \\
+			\hline
+			4     & 6918       & 5829    & 2435                & 3600         \\
+			\hline
+		\end{tabular}
+	\end{center}
+	\caption{Nodes visited with/without transposition table, branch cutting and the optimal case}
+	\label{node_count}
 \end{table}
 
 \paragraph{Further improvement}
@@ -376,7 +375,7 @@ Due to the large set of possible moves, the selection of random moves as playout
 Whereas in the pure implementation each move gets an equal amount of simulations, we can select the next node to expand based on how promising the node(n) it is. We normalize the utility $U(n)$ by the number of games $N(n)$. By considering how often a node and its parent have been visited already, we want them to be visited more often in the beginning, before we solely decide based on utility. For this implementation a $ C = \sqrt{2}$ was chosen. \cite[p.327 ff]{russell_artificial_2021}
 
 $$
-  UCB(n) = \frac{U(n)}{N(n)} + C \times \sqrt{\frac{\log{N(Parent(n))}}{N(n)}}
+	UCB(n) = \frac{U(n)}{N(n)} + C \times \sqrt{\frac{\log{N(Parent(n))}}{N(n)}}
 $$
 
 \paragraph{Playout policy}
@@ -389,30 +388,30 @@ Again by making adjustments to the game library significant performance improvem
 As follows the results of different pairings of algorithms and their variations.
 
 \begin{table}
-  \begin{adjustwidth}{-5in}{-5in}% adjust the L and R margins by 1 inch
-    \begin{center}
-      \begin{tabular}{ | c | c | c | c | c | c | c | c | }
-        \hline
-        Black player               & White player        & \small{Marbles lost b} & \small{Marbles lost w} & \small{time p. move b} & \small{time p. move w} & \small{total moves (avg)} & n \\
-        \hline
-        AlphaBeta (d=3)            & Random              & 0.2                    & 6.0                    & 11.11                  & 0.0                    & 57.6                      & 5 \\
-        \hline
-        AlphaBeta (d=4)            & Random              & 0.0                    & 6.0                    & 142.8                  & 0.0                    & 52.4                      & 5 \\
-        \hline
-        AlphaBeta (d=3)            & AlphaBetaFast (d=3) & 6.0                    & 5.0                    & 10.02                  & 4.16                   & 92                        & 1 \\
-        \hline
-        MonteCarloPure (t=20s)     & RandomPlayer        & 5.0                    & 0.0                    & 20.33                  & 0.0                    & 1008.0                    & 1 \\
-        \hline
-        MonteCarloImproved (t=20s) & RandomPlayer        & 0.0                    & 6.0                    & 20.05                  & 0.0                    & 306.0                     & 1 \\
-        \hline
-        MonteCarloImproved (t=20s) & AlphaBetaFast (d=3) & 0.0                    & 6.0                    & 69.0                   & 20.06                  & 6.24                      & 1 \\
-        \hline
-      \end{tabular}
-    \end{center}
-    \label{node_count}
-  \end{adjustwidth}
-  \medskip% adds some space after the table
-  \caption{Face-off results}
+	\begin{adjustwidth}{-5in}{-5in}% adjust the L and R margins by 1 inch
+		\begin{center}
+			\begin{tabular}{ | c | c | c | c | c | c | c | c | }
+				\hline
+				Black player               & White player        & \small{Marbles lost b} & \small{Marbles lost w} & \small{time p. move b} & \small{time p. move w} & \small{total moves (avg)} & n \\
+				\hline
+				AlphaBeta (d=3)            & Random              & 0.2                    & 6.0                    & 11.11                  & 0.0                    & 57.6                      & 5 \\
+				\hline
+				AlphaBeta (d=4)            & Random              & 0.0                    & 6.0                    & 142.8                  & 0.0                    & 52.4                      & 5 \\
+				\hline
+				AlphaBeta (d=3)            & AlphaBetaFast (d=3) & 6.0                    & 5.0                    & 10.02                  & 4.16                   & 92                        & 1 \\
+				\hline
+				MonteCarloPure (t=20s)     & RandomPlayer        & 5.0                    & 0.0                    & 20.33                  & 0.0                    & 1008.0                    & 1 \\
+				\hline
+				MonteCarloImproved (t=20s) & RandomPlayer        & 0.0                    & 6.0                    & 20.05                  & 0.0                    & 306.0                     & 1 \\
+				\hline
+				MonteCarloImproved (t=20s) & AlphaBetaFast (d=3) & 0.0                    & 6.0                    & 69.0                   & 20.06                  & 6.24                      & 1 \\
+				\hline
+			\end{tabular}
+		\end{center}
+		\label{node_count}
+	\end{adjustwidth}
+	\medskip% adds some space after the table
+	\caption{Face-off results}
 \end{table}
 
 \section{Conclusion}

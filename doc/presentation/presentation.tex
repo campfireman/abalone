@@ -99,4 +99,188 @@
 	\end{tabular}
 \end{frame}
 
+\begin{frame}
+	\frametitle{Heuristics: Ajdacency}
+	\begin{figure}
+		\centering
+		\includegraphics[width=5cm, keepaspectratio]{rules_starting_position.png}
+	\end{figure}
+	$$ \text{adjacency} = n_{\text{self}} - n_{\text{opponent}} $$
+\end{frame}
+
+\begin{frame}
+	\frametitle{Heuristics: Distance}
+	\begin{figure}
+		\centering
+		\includegraphics[width=5cm, keepaspectratio]{rules_starting_position.png}
+	\end{figure}
+	$$ \text{distance} = n_{\text{self}} - n_{\text{opponent}} $$
+\end{frame}
+
+\begin{frame}
+	\frametitle{Heuristics: Marble ratio}
+	$$ \text{marbleRatio} = n_{\text{won}} - n_{\text{lost}} $$
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Heuristics: Win and loss}
+	$$ \text{winLoss} =
+		\begin{cases}
+			1 \text{ if game won } \\
+			-1 \text{ otherwise}
+		\end{cases}
+	$$
+
+\end{frame}
+
+\begin{frame}
+	\begin{table}
+		\begin{center}
+			\begin{tabular}{ | c | c | }
+				\hline
+				Heuristic   & weight \\
+				\hline
+				adjacency   & 1      \\
+				\hline
+				distance    & -1.5   \\
+				\hline
+				marbleRatio & 100    \\
+				\hline
+				winLoss     & 100000 \\
+				\hline
+			\end{tabular}
+		\end{center}
+		\caption{Weights for the linear combination}
+		\label{heuristic_table}
+	\end{table}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Alpha-beta pruning agent: Move ordering}
+	\begin{figure}
+		\centering
+		\includegraphics[width=7cm, keepaspectratio]{move_ordering.png}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Alpha-beta pruning agent: Move ordering}
+	\begin{itemize}
+		\item Move capturing marble: +3
+		\item Move pushing marble: +1
+		\item Move involving 2/3 marbles: +1/+2
+	\end{itemize}
+\end{frame}
+\begin{frame}
+	\frametitle{Alpha-beta pruning agent: Move ordering}
+	\begin{table}
+		\begin{center}
+			\begin{tabular}{ | c | c | c | c | c | }
+				\hline
+				Depth & Without ordering & Evaluation 1 & Evaluation 2 & $\sqrt{b^d}$ \\
+				\hline
+				1     & 45               & 45           & 45           & 8            \\
+				\hline
+				2     & 1594             & 304          & 132          & 60           \\
+				\hline
+				3     & 9755             & 4971         & 2423         & 464          \\
+				\hline
+				4     & 457309           & 94650        & 6918         & 3600         \\
+				\hline
+			\end{tabular}
+		\end{center}
+		\caption{Nodes visited with/without move ordering and the optimal case}
+		\label{node_count}
+	\end{table}
+
+\end{frame}
+
+\begin{frame}
+	\frametitle{Alpha-beta pruning agent: Transposition table}
+	\begin{table}
+		\begin{center}
+			\begin{tabular}{ | c | c | c | c | }
+				\hline
+				    & 1            & 2            & ... \\
+				\hline
+				1   & 129310293812 & 929310293912 & ... \\
+				\hline
+				2   & 889394293012 & 426317297917 & ... \\
+				\hline
+				... & ...          & ...          & ... \\
+				\hline
+			\end{tabular}
+		\end{center}
+		\caption{Zobrist hash table}
+		\label{heuristic_table}
+	\end{table}
+
+\end{frame}
+
+
+\begin{frame}
+	\frametitle{Alpha-beta pruning agent: Branch cutting}
+	\begin{figure}
+		\centering
+		\includegraphics[width=7cm, keepaspectratio]{branch_cutting.png}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Monte carlo search agent}
+	\begin{figure}
+		\centering
+		\includegraphics[width=7cm, keepaspectratio]{mcts_algo.png}
+	\end{figure}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Monte carlo search agent: UCB}
+	$$
+		UCB(n) = \frac{U(n)}{N(n)} + C \times \sqrt{\frac{\log{N(Parent(n))}}{N(n)}}
+	$$
+\end{frame}
+\begin{frame}
+	\frametitle{Monte carlo search agent: Playout policy}
+	\begin{itemize}
+		\item Random moves bad as branching factor is high
+		\item Choose moves based on evaluation function
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Face-off}
+	\begin{table}
+		\begin{center}
+			\begin{tabular}{ | c | c | c | c | c | c | c | c | }
+				\hline
+				Black player               & White player        & \small{Marbles lost b} & \small{Marbles lost w} & \small{time p. move b} & \small{time p. move w} & \small{total moves (avg)} & n \\
+				\hline
+				AlphaBeta (d=3)            & Random              & 0.2                    & 6.0                    & 11.11                  & 0.0                    & 57.6                      & 5 \\
+				\hline
+				AlphaBeta (d=4)            & Random              & 0.0                    & 6.0                    & 142.8                  & 0.0                    & 52.4                      & 5 \\
+				\hline
+				AlphaBeta (d=3)            & AlphaBetaFast (d=3) & 6.0                    & 5.0                    & 10.02                  & 4.16                   & 92                        & 1 \\
+				\hline
+				MonteCarloPure (t=20s)     & RandomPlayer        & 5.0                    & 0.0                    & 20.33                  & 0.0                    & 1008.0                    & 1 \\
+				\hline
+				MonteCarloImproved (t=20s) & RandomPlayer        & 0.0                    & 6.0                    & 20.05                  & 0.0                    & 306.0                     & 1 \\
+				\hline
+				MonteCarloImproved (t=20s) & AlphaBetaFast (d=3) & 0.0                    & 6.0                    & 69.0                   & 20.06                  & 6.24                      & 1 \\
+				\hline
+			\end{tabular}
+		\end{center}
+		\label{node_count}
+		\caption{Face-off results}
+	\end{table}
+\end{frame}
+
+\begin{frame}
+	\frametitle{Conclusion}
+	\begin{itemize}
+		\item Implementation simple, improvement requires a lot of engineering
+		\item MCTS performed badly but with more time still promising
+	\end{itemize}
+\end{frame}
 \end{document}
