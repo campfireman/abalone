@@ -7,10 +7,13 @@ import hashlib
 import inspect
 import math
 import random
+import sys
 import time
 from collections import defaultdict
 from dataclasses import dataclass
+from itertools import product
 from math import floor
+from multiprocessing import Pool
 from operator import itemgetter
 from random import choice
 from typing import List, Tuple, Union
@@ -25,6 +28,16 @@ from . import utils
 
 nodes = 0
 storage = utils.Storage()
+
+
+def run(child, parent):
+    return AlphaBetaSimple(
+        child[0], parent.player, parent.depth - 1, parent.alpha, parent.beta, not parent.is_maximizer, child[1], child[2], func=parent.func).run()
+
+
+def count_nodes():
+    global nodes
+    nodes += 1
 
 
 class Heuristics:
@@ -79,7 +92,7 @@ class Algorithm:
 
 
 class AlphaBetaBase(Algorithm):
-    def __init__(self, game: Game, perspective: Player, depth: int = 3, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None):
+    def __init__(self, game: Game, perspective: Player, depth: int = 4, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -298,14 +311,44 @@ class AlphaBetaAdvancedFast(AlphaBetaAdvanced):
         return super()._order_children(children)[:30]
 
 
+class PVS(AlphaBetaSimple):
+    def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
+        if self.depth == 0 or utils.game_is_over(self.game.get_score()):
+            return self._end((self._heuristic(self.game), None, None))
+
+        children = self._create_children()
+        succ_node = children.pop(0)
+        score = self.__class__(
+            succ_node[0], self.player, self.depth - 1, self.alpha, self.beta, not self.is_maximizer, succ_node[1], succ_node[2], func=self.func).run()
+        if score[0] > self.beta:
+            return self._end((self.beta, self.marbles, self.direction))
+        if score[0] > self.alpha:
+            self.alpha = score[0]
+
+        with Pool() as pool:
+            children = pool.starmap(run, product(children, [self]))
+
+        for result in children:
+            if (result[0] > self.beta):
+                return self._end((self.beta, self.marbles, self.direction))
+            if (result[0] > self.alpha):
+                score = result
+                self.alpha = result[0]
+
+        return self._end((self.alpha, score[1], score[2]))
+
+
 class AlphaBetaPlayer(AbstractPlayer):
     '''
     '''
 
-    def __init__(self, *args, depth=3, verbose=True, **kwargs):
+    def __init__(self, *args, verbose=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.depth = depth
         self.verbose = verbose
+
+    @property
+    def depth(self):
+        return 3
 
     def __str__(self):
         return f'AlphaBetaPlayer depth: {self.depth} algo: {str(self.get_algorithm())}'
@@ -317,9 +360,6 @@ class AlphaBetaPlayer(AbstractPlayer):
         global nodes
         nodes = 0
 
-        def count_nodes():
-            global nodes
-            nodes += 1
         result = self.get_algorithm()(
             game, game.turn.value, func=count_nodes, depth=self.depth).run()
         if self.verbose:
@@ -327,6 +367,16 @@ class AlphaBetaPlayer(AbstractPlayer):
             print(f'Nodes visited: {nodes}')
 
         return [result[1], result[2]]
+
+
+class PVSPlayer(AlphaBetaPlayer):
+
+    @property
+    def depth(self):
+        return 4
+
+    def get_algorithm(self):
+        return PVS
 
 
 class AlphaBetaPlayerFast(AlphaBetaPlayer):
