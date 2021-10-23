@@ -92,7 +92,7 @@ class Algorithm:
 
 
 class AlphaBetaBase(Algorithm):
-    def __init__(self, game: Game, perspective: Player, depth: int = 4, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None):
+    def __init__(self, game: Game, perspective: Player, depth: int = 4, alpha: float = float('-inf'), beta: float = float('inf'), is_maximizer: bool = True, marbles: Union[Space, Tuple[Space, Space]] = None, direction: Direction = None, func: function = None, initial_depth: int = 4):
         self.game = game
         self.depth = depth
         self.alpha = alpha
@@ -103,6 +103,7 @@ class AlphaBetaBase(Algorithm):
         self.player = perspective
         self.not_player = Player.BLACK.value if perspective == Player.WHITE.value else Player.WHITE.value
         self.func = func
+        self.initial_depth = initial_depth
         if func:
             func()
 
@@ -152,7 +153,7 @@ class AlphaBetaBase(Algorithm):
             value = (float('-inf'), None, None)
             for child in self._create_children():
                 value = max(value, self.__class__(
-                    child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2], func=self.func).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, False, child[1], child[2], func=self.func, initial_depth=self.initial_depth).run(), key=itemgetter(0))
                 self.alpha = max(self.alpha, value[0])
                 if self.alpha >= self.beta:
                     break
@@ -160,7 +161,7 @@ class AlphaBetaBase(Algorithm):
             value = (float('inf'), None, None)
             for child in self._create_children():
                 value = min(value, self.__class__(
-                    child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2], func=self.func).run(), key=itemgetter(0))
+                    child[0], self.player, self.depth - 1, self.alpha, self.beta, True, child[1], child[2], func=self.func, initial_depth=self.initial_depth).run(), key=itemgetter(0))
                 self.beta = min(self.beta, value[0])
                 if self.beta <= self.alpha:
                     break
@@ -312,6 +313,24 @@ class AlphaBetaAdvancedFast(AlphaBetaAdvanced):
 
 
 class PVS(AlphaBetaSimple):
+    def _order_children(self, children):
+        children = super()._order_children(children)
+        # build tightening funnel
+        min_cutoff = 0.4
+        max_cutoff = 0.1
+
+        if self.depth == self.initial_depth:
+            cutoff = min_cutoff
+        elif self.depth == 1:
+            cutoff = max_cutoff
+        else:
+            cutoff = (((min_cutoff - max_cutoff) * (1 - ((self.initial_depth -
+                                                          self.depth) / self.initial_depth))) + max_cutoff)**1.2
+        width = int(len(children) * cutoff)
+        # print(
+        # f'Width: {width} vs {len(children)} Depth: {self.depth} Cutoff: {cutoff}')
+        return children[:width]
+
     def run(self) -> Tuple[int, Union[Space, Tuple[Space, Space]], Direction]:
         if self.depth == 0 or utils.game_is_over(self.game.get_score()):
             return self._end((self._heuristic(self.game), None, None))
@@ -319,7 +338,7 @@ class PVS(AlphaBetaSimple):
         children = self._create_children()
         succ_node = children.pop(0)
         score = self.__class__(
-            succ_node[0], self.player, self.depth - 1, self.alpha, self.beta, not self.is_maximizer, succ_node[1], succ_node[2], func=self.func).run()
+            succ_node[0], self.player, self.depth - 1, self.alpha, self.beta, not self.is_maximizer, succ_node[1], succ_node[2], func=self.func, initial_depth=self.initial_depth).run()
         if score[0] > self.beta:
             return self._end((self.beta, self.marbles, self.direction))
         if score[0] > self.alpha:
@@ -346,7 +365,7 @@ class AlphaBetaPlayer(AbstractPlayer):
         super().__init__(*args, **kwargs)
         self.verbose = verbose
 
-    @property
+    @ property
     def depth(self):
         return 3
 
@@ -361,7 +380,7 @@ class AlphaBetaPlayer(AbstractPlayer):
         nodes = 0
 
         result = self.get_algorithm()(
-            game, game.turn.value, func=count_nodes, depth=self.depth).run()
+            game, game.turn.value, func=count_nodes, depth=self.depth, initial_depth=self.depth).run()
         if self.verbose:
             print(f'Heuristic: {result[0]}')
             print(f'Nodes visited: {nodes}')
@@ -370,13 +389,18 @@ class AlphaBetaPlayer(AbstractPlayer):
 
 
 class PVSPlayer(AlphaBetaPlayer):
-
-    @property
+    @ property
     def depth(self):
-        return 4
+        return 5
 
     def get_algorithm(self):
         return PVS
+
+
+class PVSPlayerShallow(PVSPlayer):
+    @ property
+    def depth(self):
+        return 3
 
 
 class AlphaBetaPlayerFast(AlphaBetaPlayer):
@@ -384,7 +408,7 @@ class AlphaBetaPlayerFast(AlphaBetaPlayer):
         return AlphaBetaAdvancedFast
 
 
-@dataclass
+@ dataclass
 class Move:
     move: Tuple[Union[Space, Tuple[Space, Space]], Direction]
     value: int
@@ -404,7 +428,7 @@ class MctsNode:
         self.children = []
         self.uct = float('inf')
 
-    @property
+    @ property
     def stats(self) -> (int, int):
         return (self.black_stats / self.no_games if self.no_games != 0 else 0, self.white_stats / self.no_games if self.no_games != 0 else 0)
 
